@@ -1,1 +1,5 @@
+{:ok, _} = Application.ensure_all_started(:ex_machina)
+Logger.configure(level: :warn)
 ExUnit.start()
+Identity.Test.Repo.start_link()
+Ecto.Adapters.SQL.Sandbox.mode(Identity.Test.Repo, :manual)
