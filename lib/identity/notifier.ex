@@ -19,13 +19,19 @@ defmodule Identity.Notifier do
         end
       end
 
-  Then, configure this new module as the notifier:
+  Callbacks should return `:ok` or `{:error, reason}`. In general, error responses will be
+  returned to the caller of the function that triggered the notification. For example, if the
+  notifier fails to send a password reset token, then the caller of
+  `Identity.request_password_reset/1` will receive that error as the return value.
+
+  After defining the module, configure it as the notifier:
 
       config :identity,
+        # ...
         notifier: MyApp.Notifier
 
-  If a callback is not defined, the default action will be to print an informational log message
-  using `Logger.info/1`. For a list of possible callbacks, see below.
+  If any given callback is not defined, the default action will be to print an informational log
+  message using `Logger.info/1`. For a list of possible callbacks, see below.
   """
   alias Identity.User
 
@@ -43,6 +49,10 @@ defmodule Identity.Notifier do
     end
   end
 
-  @doc "Send a password reset `token` and instructions to the given `user`."
+  @doc """
+  Send a password reset `token` and instructions to the given `user`.
+
+  The token passed to this callback is already encoded to be human-readable and URL-safe.
+  """
   @callback reset_password(user :: User.t(), token :: String.t()) :: :ok | {:error, any}
 end

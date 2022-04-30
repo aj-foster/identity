@@ -8,7 +8,7 @@ defmodule Identity do
   alias Identity.Session
   alias Identity.User
 
-  @notifier Application.compile_env!(:identity, :notifier)
+  @notifier Application.compile_env(:identity, :notifier, Identity.Notifier.Log)
   @repo Application.compile_env!(:identity, :repo)
 
   #

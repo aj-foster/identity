@@ -14,6 +14,7 @@ defmodule Identity.Config do
   about your use-case.
 
   | Option | Type | Scope | Description |
+  | `notifier` | `module` | Compilation | Name of the module that implements the `Identity.Notifier` behaviour. This module will be called to send notifications to users. Default: `Identity.Notifier.Log` |
   | `repo` | `module` | Compilation | Name of the Ecto.Repo module for your application, for example `MyApp.Repo` |
   | `user` | `module` | Compilation | Name of the module that contains your User schema, for example `MyApp.Accounts.User`. This schema must have a UUID primary key called `id`. |
   """
