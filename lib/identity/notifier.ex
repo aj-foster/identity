@@ -4,7 +4,7 @@ defmodule Identity.Notifier do
 
   In order to support multiple methods of sending notifications, this protocol defines a set of
   callbacks that run when notifiable actions occur. For example, when a user requests a password
-  reset, Identity will run the `reset_password/2` callback from the configured notifier.
+  reset, Identity will run the `c:reset_password/2` callback from the configured notifier.
 
   ## Usage
 

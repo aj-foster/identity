@@ -68,7 +68,7 @@ defmodule Identity.Session do
   end
 
   @doc """
-  Get the ID of the user associated with the given `token`. Call with `Ecto.Repo.update_all/3`.
+  Get the ID of the user associated with the given `token`. Call with `c:Ecto.Repo.update_all/3`.
 
   Also updates the session's `last_active_at` field.
   """
