@@ -3,7 +3,7 @@ defmodule Identity.Email do
   Emails represent addresses associated with a user.
 
   This struct is fully managed by Identity and its migrations. If you find yourself working with
-  this struct directly or changing the underlying table, please share your use-case with the
+  this struct directly or changing the underlying table, please share your use case with the
   maintainers of the library.
   """
   use Ecto.Schema
@@ -15,7 +15,6 @@ defmodule Identity.Email do
   alias Identity.User
 
   @expiration_days 7
-  @repo Application.compile_env!(:identity, :repo)
 
   @type t :: %__MODULE__{
           confirmed_at: DateTime.t() | nil,
@@ -65,7 +64,7 @@ defmodule Identity.Email do
       message: "must have the @ sign and no spaces"
     )
     |> Changeset.validate_length(:email, max: 160)
-    |> Changeset.unsafe_validate_unique(:email, @repo)
+    |> Changeset.unsafe_validate_unique(:email, repo())
     |> Changeset.unique_constraint(:email)
   end
 
@@ -139,4 +138,11 @@ defmodule Identity.Email do
   defp filter_confirmed_emails(query, confirmed?)
   defp filter_confirmed_emails(query, true), do: where(query, [e], not is_nil(e.confirmed_at))
   defp filter_confirmed_emails(query, _), do: query
+
+  #
+  # Configuration
+  #
+
+  @compile {:inline, repo: 0}
+  defp repo, do: Application.fetch_env!(:identity, :repo)
 end

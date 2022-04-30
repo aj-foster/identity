@@ -8,8 +8,14 @@ defmodule Identity do
   alias Identity.Session
   alias Identity.User
 
-  @notifier Application.compile_env(:identity, :notifier, Identity.Notifier.Log)
-  @repo Application.compile_env!(:identity, :repo)
+  #
+  # Configuration
+  #
+
+  @compile {:inline, notifier: 0, repo: 0}
+  # Note: this is a deliberate performance trade-off for the sake of runtime configuration.
+  defp notifier, do: Application.get_env(:identity, :notifier, Identity.Notifier.Log)
+  defp repo, do: Application.fetch_env!(:identity, :repo)
 
   #
   # Users
@@ -17,7 +23,7 @@ defmodule Identity do
 
   @doc "Gets a single user by ID, raising if the user does not exist."
   @spec get_user!(Ecto.UUID.t()) :: User.t() | no_return
-  def get_user!(id), do: @repo.get!(User, id)
+  def get_user!(id), do: repo().get!(User, id)
 
   #
   # Basic Logins
@@ -27,7 +33,7 @@ defmodule Identity do
   @spec get_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
-    login = Email.get_login_by_email_query(email) |> @repo.one()
+    login = Email.get_login_by_email_query(email) |> repo().one()
     if BasicLogin.valid_password?(login, password), do: login.user
   end
 
@@ -49,20 +55,20 @@ defmodule Identity do
     Ecto.Multi.new()
     |> Ecto.Multi.insert(:email, email_changeset)
     |> Ecto.Multi.insert(:login, login_changeset)
-    |> @repo.transaction()
+    |> repo().transaction()
   end
 
   @doc "Create a changeset for changing the user's password."
   @spec request_password_change(User.t(), map) :: Ecto.Changeset.t()
   def request_password_change(%User{} = user, attrs \\ %{}) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> @repo.one()
+    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
     BasicLogin.password_changeset(basic_login, attrs, hash_password: false)
   end
 
   @doc "Update the password for the given `user` and remove all active sessions and tokens."
   @spec change_password(User.t(), String.t(), map) :: :ok | {:error, Ecto.Changeset.t()}
   def change_password(%User{} = user, current_password, attrs \\ %{}) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> @repo.one()
+    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
     login_changeset =
       BasicLogin.password_changeset(basic_login, attrs)
@@ -75,7 +81,7 @@ defmodule Identity do
     |> Ecto.Multi.update(:login, login_changeset)
     |> Ecto.Multi.delete_all(:sessions, session_query)
     |> Ecto.Multi.delete_all(:password_resets, reset_token_query)
-    |> @repo.transaction()
+    |> repo().transaction()
     |> case do
       {:ok, _} -> :ok
       {:error, :login, changeset, _} -> {:error, changeset}
@@ -86,7 +92,7 @@ defmodule Identity do
   @spec request_enable_2fa(User.t()) :: Ecto.Changeset.t(BasicLogin.t())
   def request_enable_2fa(user) do
     BasicLogin.get_login_by_user_query(user)
-    |> @repo.one()
+    |> repo().one()
     |> BasicLogin.generate_otp_secret_changeset()
   end
 
@@ -101,7 +107,7 @@ defmodule Identity do
   def enable_2fa(login_changeset, code) do
     BasicLogin.enable_2fa_changeset(login_changeset, code)
     |> BasicLogin.ensure_backup_codes()
-    |> @repo.update()
+    |> repo().update()
     |> case do
       {:ok, %BasicLogin{backup_codes: codes}} ->
         {:ok, Enum.map(codes, & &1.code)}
@@ -114,17 +120,17 @@ defmodule Identity do
   @doc "Validate the given 2FA or backup `code` for the given `user`."
   @spec valid_2fa?(User.t(), String.t()) :: boolean
   def valid_2fa?(user, code) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> @repo.one()
+    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
     cond do
       BasicLogin.valid_otp_code?(basic_login, code) ->
         BasicLogin.set_last_used_otp_query(user)
-        |> @repo.update_all([])
+        |> repo().update_all([])
 
         true
 
       changeset = BasicLogin.use_backup_code_changeset(basic_login, code) ->
-        @repo.update!(changeset)
+        repo().update!(changeset)
         true
 
       true ->
@@ -137,10 +143,10 @@ defmodule Identity do
           {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
   def regenerate_2fa_backup_codes(user) do
     BasicLogin.get_login_by_user_query(user)
-    |> @repo.one()
+    |> repo().one()
     |> Ecto.Changeset.change()
     |> BasicLogin.regenerate_backup_codes()
-    |> @repo.update()
+    |> repo().update()
     |> case do
       {:ok, %BasicLogin{backup_codes: codes}} ->
         {:ok, Enum.map(codes, & &1.code)}
@@ -154,7 +160,7 @@ defmodule Identity do
   @spec disable_2fa(User.t()) :: :ok | {:error, :not_found}
   def disable_2fa(user) do
     BasicLogin.disable_2fa_query(user)
-    |> @repo.update_all([])
+    |> repo().update_all([])
     |> case do
       {1, _} -> :ok
       {0, _} -> {:error, :not_found}
@@ -169,7 +175,7 @@ defmodule Identity do
   @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email) when is_binary(email) do
     Email.get_user_by_email_query(email)
-    |> @repo.one()
+    |> repo().one()
   end
 
   @doc "Create an unconfirmed email for the given `user`."
@@ -178,14 +184,14 @@ defmodule Identity do
     %Email{}
     |> Email.registration_changeset(%{email: email})
     |> Ecto.Changeset.put_assoc(:user, user)
-    |> @repo.insert()
+    |> repo().insert()
   end
 
   @doc "Confirm an email by its encoded `token`."
   @spec confirm_email(String.t()) :: {:ok, Email.t()} | {:error, :invalid | :not_found}
   def confirm_email(token) do
     with {:ok, query} <- Email.confirm_email_query(token),
-         {1, [email]} <- @repo.update_all(query, []) do
+         {1, [email]} <- repo().update_all(query, []) do
       {:ok, email}
     else
       :error -> {:error, :invalid}
@@ -197,7 +203,7 @@ defmodule Identity do
   @spec remove_email(User.t(), String.t()) :: :ok | {:error, :only_email | :not_found}
   def remove_email(user, email) do
     Email.list_emails_by_user_query(user.id)
-    |> @repo.all()
+    |> repo().all()
     |> Enum.split_with(&is_nil(&1.confirmed_at))
     |> case do
       # Only confirmed email address:
@@ -210,7 +216,7 @@ defmodule Identity do
 
       _ ->
         Email.get_by_email_query(email)
-        |> @repo.delete_all()
+        |> repo().delete_all()
         |> case do
           {1, _} -> :ok
           {0, _} -> {:error, :not_found}
@@ -228,9 +234,9 @@ defmodule Identity do
       token =
       PasswordToken.initiate_reset_changeset()
       |> Ecto.Changeset.put_assoc(:user, user)
-      |> @repo.insert!()
+      |> repo().insert!()
 
-    with :ok <- @notifier.reset_password(user, encoded_token) do
+    with :ok <- notifier().reset_password(user, encoded_token) do
       {:ok, token}
     end
   end
@@ -239,7 +245,7 @@ defmodule Identity do
   @spec get_user_by_password_token(String.t()) :: User.t() | nil
   def get_user_by_password_token(token) do
     with {:ok, query} <- PasswordToken.get_user_by_token_query(token),
-         %User{} = user <- @repo.one(query) do
+         %User{} = user <- repo().one(query) do
       user
     else
       _ -> nil
@@ -249,13 +255,13 @@ defmodule Identity do
   @doc "Reset a user's password."
   @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Changeset.t()}
   def reset_password(user, attrs) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> @repo.one()
+    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
     Ecto.Multi.new()
     |> Ecto.Multi.update(:password, BasicLogin.password_changeset(basic_login, attrs))
     |> Ecto.Multi.delete_all(:tokens, PasswordToken.list_by_user_query(user))
     |> Ecto.Multi.delete_all(:sessions, Session.list_by_user_query(user))
-    |> @repo.transaction()
+    |> repo().transaction()
     |> case do
       {:ok, _} -> {:ok, user}
       {:error, :password, changeset, _} -> {:error, changeset}
@@ -270,14 +276,14 @@ defmodule Identity do
   @spec create_session(User.t(), String.t()) :: Session.t()
   def create_session(user, client) do
     Session.build_token(user, client)
-    |> @repo.insert!()
+    |> repo().insert!()
   end
 
   @doc "Get the user associated with the given binary (non-printable) session `token`."
   @spec get_user_by_session(binary) :: User.t() | nil
   def get_user_by_session(token) do
     Session.verify_token_query(token)
-    |> @repo.update_all([])
+    |> repo().update_all([])
     |> case do
       {1, [user]} -> user
       _ -> nil
@@ -288,7 +294,7 @@ defmodule Identity do
   @spec delete_session(binary) :: :ok
   def delete_session(token) do
     Session.get_by_token_query(token)
-    |> @repo.delete_all()
+    |> repo().delete_all()
 
     :ok
   end
@@ -297,7 +303,7 @@ defmodule Identity do
   @spec delete_sessions_by_user(User.t()) :: :ok
   def delete_sessions_by_user(user) do
     Session.list_by_user_query(user)
-    |> @repo.delete_all()
+    |> repo().delete_all()
 
     :ok
   end
