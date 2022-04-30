@@ -215,7 +215,7 @@ defmodule IdentityTest do
 
     test "deletes all tokens for the given user", %{user: user} do
       Identity.create_session(user, "test")
-      Identity.request_password_reset(user, & &1)
+      Identity.request_password_reset(user)
 
       :ok =
         Identity.change_password(user, Factory.valid_user_password(), %{
@@ -464,7 +464,7 @@ defmodule IdentityTest do
     end
 
     test "sends token through notification", %{user: user} do
-      {:ok, %PasswordToken{token: token}} = Identity.request_password_reset(user, & &1)
+      {:ok, %PasswordToken{token: token}} = Identity.request_password_reset(user)
       {:ok, token} = Base.url_decode64(token, padding: false)
       assert user_token = Repo.get_by(PasswordToken, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
@@ -532,7 +532,7 @@ defmodule IdentityTest do
     end
 
     test "deletes all tokens for the given user", %{user: user} do
-      Identity.request_password_reset(user, & &1)
+      Identity.request_password_reset(user)
       {:ok, _} = Identity.reset_password(user, %{password: "new valid password"})
       refute Repo.get_by(PasswordToken, user_id: user.id)
     end

@@ -10,4 +10,5 @@ config :identity, Identity.Test.Repo,
 
 config :identity,
   ecto_repos: [Identity.Test.Repo],
+  notifier: Identity.Test.Notifier,
   repo: Identity.Test.Repo

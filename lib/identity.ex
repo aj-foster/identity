@@ -4,11 +4,11 @@ defmodule Identity do
   """
   alias Identity.BasicLogin
   alias Identity.Email
-  alias Identity.Notifier
   alias Identity.PasswordToken
   alias Identity.Session
   alias Identity.User
 
+  @notifier Application.compile_env!(:identity, :notifier)
   @repo Application.compile_env!(:identity, :repo)
 
   #
@@ -222,20 +222,15 @@ defmodule Identity do
   # Passwords
   #
 
-  @spec request_password_reset(User.t(), (String.t() -> String.t())) :: {:ok, PasswordToken.t()}
-  def request_password_reset(%User{} = user, reset_password_url_fun)
-      when is_function(reset_password_url_fun, 1) do
+  @spec request_password_reset(User.t()) :: {:ok, PasswordToken.t()}
+  def request_password_reset(%User{} = user) do
     %PasswordToken{token: encoded_token} =
       token =
       PasswordToken.initiate_reset_changeset()
       |> Ecto.Changeset.put_assoc(:user, user)
       |> @repo.insert!()
 
-    with :ok <-
-           Notifier.deliver_reset_password_instructions(
-             user,
-             reset_password_url_fun.(encoded_token)
-           ) do
+    with :ok <- @notifier.reset_password(user, encoded_token) do
       {:ok, token}
     end
   end
