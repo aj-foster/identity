@@ -24,3 +24,6 @@ identity-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Other generated documentation
+/docs/
