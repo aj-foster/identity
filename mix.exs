@@ -46,6 +46,7 @@ defmodule Identity.MixProject do
       {:mix_test_watch, "~> 1.0", only: [:test], runtime: false},
       {:nimble_totp, "~> 0.1", optional: true},
       {:phoenix, "~> 1.4", optional: true},
+      {:phoenix_live_view, "~> 0.17.0", optional: true},
       {:plug_cowboy, "~> 2.0", optional: true},
       {:plug_crypto, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
