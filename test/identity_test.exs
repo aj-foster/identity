@@ -554,7 +554,7 @@ defmodule IdentityTest do
     end
 
     test "generates a token", %{user: user} do
-      %Session{token: token} = Identity.create_session(user, "test")
+      token = Identity.create_session(user, "test")
       assert Repo.get_by(Session, token: token)
 
       assert_raise Ecto.ConstraintError, fn ->
@@ -566,7 +566,7 @@ defmodule IdentityTest do
   describe "get_user_by_session/1" do
     setup do
       user = Factory.insert(:user)
-      %Session{token: token} = Identity.create_session(user, "test")
+      token = Identity.create_session(user, "test")
       %{user: user, token: token}
     end
 
@@ -595,7 +595,7 @@ defmodule IdentityTest do
   describe "delete_session/1" do
     setup do
       user = Factory.insert(:user)
-      %Session{token: token} = Identity.create_session(user, "test")
+      token = Identity.create_session(user, "test")
       %{user: user, token: token}
     end
 
@@ -613,8 +613,8 @@ defmodule IdentityTest do
   describe "delete_sessions_by_user/1" do
     setup do
       user = Factory.insert(:user)
-      %Session{token: token1} = Identity.create_session(user, "test")
-      %Session{token: token2} = Identity.create_session(user, "test")
+      token1 = Identity.create_session(user, "test")
+      token2 = Identity.create_session(user, "test")
       %{user: user, tokens: [token1, token2]}
     end
 
