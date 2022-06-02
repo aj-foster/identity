@@ -1,28 +1,7 @@
 defmodule Identity.PlugTest do
-  use ExUnit.Case, async: true
-  import Phoenix.ConnTest
-  import Plug.Conn
-
-  alias Identity.Test.Factory
+  use Identity.ConnCase, async: true
 
   @remember_me_cookie "_identity_user_remember_me"
-
-  setup tags do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Identity.Test.Repo, shared: not tags[:async])
-    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
-    :ok
-  end
-
-  setup do
-    conn =
-      build_conn()
-      |> Map.replace!(:secret_key_base, "secret")
-      |> init_test_session(%{})
-
-    user = Factory.insert(:user)
-
-    %{conn: conn, user: user}
-  end
 
   describe "log_in_user/3" do
     test "stores the user token in the session", %{conn: conn, user: user} do

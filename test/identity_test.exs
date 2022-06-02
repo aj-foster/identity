@@ -1,8 +1,5 @@
 defmodule IdentityTest do
-  use ExUnit.Case, async: true
-
-  alias Identity.Test.Factory
-  alias Identity.Test.Repo
+  use Identity.DataCase, async: true
 
   alias Identity
   alias Identity.Schema.BasicLogin
@@ -10,12 +7,6 @@ defmodule IdentityTest do
   alias Identity.Schema.PasswordToken
   alias Identity.Schema.Session
   alias Identity.User
-
-  setup tags do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Identity.Test.Repo, shared: not tags[:async])
-    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
-    :ok
-  end
 
   #
   # Users
