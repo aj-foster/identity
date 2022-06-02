@@ -1,6 +1,15 @@
 # Note: This file is for testing configuration only.
 import Config
 
+config :identity, Identity.Test.Endpoint,
+  check_origin: false,
+  code_reloader: false,
+  debug_errors: true,
+  http: [port: 4000],
+  secret_key_base: "secret",
+  server: true,
+  url: [host: "localhost"]
+
 config :identity, Identity.Test.Repo,
   name: Identity.Test.Repo,
   priv: "test/support/",

@@ -26,7 +26,7 @@ defmodule Identity.MixProject do
   def application do
     if Mix.env() == :test do
       [
-        extra_applications: [:logger, :ex_machina],
+        extra_applications: [:logger, :ranch, :ex_machina],
         mod: {Identity.Test.Application, []}
       ]
     else
@@ -46,7 +46,7 @@ defmodule Identity.MixProject do
       {:mix_test_watch, "~> 1.0", only: [:test], runtime: false},
       {:nimble_totp, "~> 0.1", optional: true},
       {:phoenix, "~> 1.4", optional: true},
-      {:plug, "~> 1.7", optional: true},
+      {:plug_cowboy, "~> 2.0", optional: true},
       {:plug_crypto, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
       {:ua_parser, "~> 1.8"}

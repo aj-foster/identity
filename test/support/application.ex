@@ -6,7 +6,8 @@ defmodule Identity.Test.Application do
     Logger.configure(level: :warn)
 
     children = [
-      Identity.Test.Repo
+      Identity.Test.Repo,
+      Identity.Test.Endpoint
     ]
 
     opts = [strategy: :one_for_one, name: Identity.Supervisor]
