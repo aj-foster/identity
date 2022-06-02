@@ -281,6 +281,28 @@ defmodule IdentityTest do
     end
   end
 
+  describe "enabled_2fa?/1" do
+    setup do
+      user = Factory.insert(:user)
+      Factory.insert(:basic_login, user: user)
+
+      %{user: user}
+    end
+
+    test "returns true when 2FA is enabled", %{user: user} do
+      changeset = Identity.request_enable_2fa(user)
+      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
+      otp = NimbleTOTP.verification_code(otp_secret)
+      Identity.enable_2fa(changeset, otp)
+
+      assert Identity.enabled_2fa?(user)
+    end
+
+    test "returns false when 2FA is not enabled", %{user: user} do
+      refute Identity.enabled_2fa?(user)
+    end
+  end
+
   describe "valid_2fa?/2" do
     setup do
       user = Factory.insert(:user)

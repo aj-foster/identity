@@ -121,6 +121,13 @@ defmodule Identity do
     end
   end
 
+  @doc "Check whether 2FA is enabled for the given `user`."
+  @spec enabled_2fa?(User.t()) :: boolean
+  def enabled_2fa?(user) do
+    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
+    not is_nil(basic_login) and not is_nil(basic_login.otp_secret)
+  end
+
   @doc "Validate the given 2FA or backup `code` for the given `user`."
   @spec valid_2fa?(User.t(), String.t()) :: boolean
   def valid_2fa?(user, code) do
