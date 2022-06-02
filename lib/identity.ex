@@ -21,6 +21,10 @@ defmodule Identity do
   # Users
   #
 
+  @doc "Gets a single user by ID, or `nil` if the user does not exist."
+  @spec get_user(Ecto.UUID.t()) :: User.t() | nil
+  def get_user(id), do: repo().get(User, id)
+
   @doc "Gets a single user by ID, raising if the user does not exist."
   @spec get_user!(Ecto.UUID.t()) :: User.t() | no_return
   def get_user!(id), do: repo().get!(User, id)

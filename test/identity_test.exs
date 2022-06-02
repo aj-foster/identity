@@ -12,6 +12,17 @@ defmodule IdentityTest do
   # Users
   #
 
+  describe "get_user/1" do
+    test "returns nil if ID is invalid" do
+      assert is_nil(Identity.get_user("11111111-1111-1111-1111-111111111111"))
+    end
+
+    test "returns the user with the given ID" do
+      %{id: user_id} = Factory.insert(:user)
+      assert %User{id: ^user_id} = Identity.get_user(user_id)
+    end
+  end
+
   describe "get_user!/1" do
     test "raises if ID is invalid" do
       assert_raise Ecto.NoResultsError, fn ->
