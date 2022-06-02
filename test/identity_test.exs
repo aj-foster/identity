@@ -5,10 +5,10 @@ defmodule IdentityTest do
   alias Identity.Test.Repo
 
   alias Identity
-  alias Identity.BasicLogin
-  alias Identity.Email
-  alias Identity.PasswordToken
-  alias Identity.Session
+  alias Identity.Schema.BasicLogin
+  alias Identity.Schema.Email
+  alias Identity.Schema.PasswordToken
+  alias Identity.Schema.Session
   alias Identity.User
 
   setup tags do

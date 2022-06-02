@@ -1,4 +1,4 @@
-defmodule Identity.BasicLogin do
+defmodule Identity.Schema.BasicLogin do
   @moduledoc """
   Basic Logins represent the ability to log in with an email address and password.
 

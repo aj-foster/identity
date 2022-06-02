@@ -11,7 +11,7 @@ defmodule Identity.Test.Factory do
   def basic_login_factory(attrs) do
     now = DateTime.utc_now()
 
-    %Identity.BasicLogin{
+    %Identity.Schema.BasicLogin{
       hashed_password: "$",
       id: Ecto.UUID.generate(),
       inserted_at: now,
@@ -38,7 +38,7 @@ defmodule Identity.Test.Factory do
     token = Token.generate_token()
     hashed_token = Token.hash_token(token)
 
-    %Identity.Email{
+    %Identity.Schema.Email{
       confirmed_at: now,
       email: unique_user_email(),
       generated_at: now,
@@ -56,7 +56,7 @@ defmodule Identity.Test.Factory do
     token = Token.generate_token()
     hashed_token = Token.hash_token(token)
 
-    %Identity.PasswordToken{
+    %Identity.Schema.PasswordToken{
       id: Ecto.UUID.generate(),
       inserted_at: now,
       hashed_token: hashed_token,
@@ -68,7 +68,7 @@ defmodule Identity.Test.Factory do
   def session_factory do
     now = DateTime.utc_now()
 
-    %Identity.Session{
+    %Identity.Schema.Session{
       client: "test",
       id: Ecto.UUID.generate(),
       inserted_at: now,

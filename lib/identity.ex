@@ -2,10 +2,10 @@ defmodule Identity do
   @moduledoc """
   Provides access to users, sessions, and logins.
   """
-  alias Identity.BasicLogin
-  alias Identity.Email
-  alias Identity.PasswordToken
-  alias Identity.Session
+  alias Identity.Schema.BasicLogin
+  alias Identity.Schema.Email
+  alias Identity.Schema.PasswordToken
+  alias Identity.Schema.Session
   alias Identity.User
 
   #

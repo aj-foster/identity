@@ -1,4 +1,4 @@
-defmodule Identity.Email do
+defmodule Identity.Schema.Email do
   @moduledoc """
   Emails represent addresses associated with a user.
 
@@ -10,7 +10,7 @@ defmodule Identity.Email do
   import Ecto.Query
 
   alias Ecto.Changeset
-  alias Identity.BasicLogin
+  alias Identity.Schema.BasicLogin
   alias Identity.Token
   alias Identity.User
 

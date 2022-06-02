@@ -1,5 +1,11 @@
-defmodule Identity.Session do
-  @moduledoc "Struct representing a revokable login session."
+defmodule Identity.Schema.Session do
+  @moduledoc """
+  Struct representing a revokable login session.
+
+  This struct is fully managed by Identity and its migrations. If you find yourself working with
+  this struct directly or changing the underlying table, please share your use case with the
+  maintainers of the library.
+  """
   use Ecto.Schema
 
   import Ecto.Query
