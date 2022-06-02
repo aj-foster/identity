@@ -272,11 +272,12 @@ defmodule Identity do
   # Sessions
   #
 
-  @doc "Create a session for the given `user` and `client`."
-  @spec create_session(User.t(), String.t()) :: Session.t()
+  @doc "Create a session for the given `user` and `client`, returning an unencoded token."
+  @spec create_session(User.t(), String.t()) :: binary
   def create_session(user, client) do
     Session.build_token(user, client)
     |> repo().insert!()
+    |> Map.get(:token)
   end
 
   @doc "Get the user associated with the given binary (non-printable) session `token`."

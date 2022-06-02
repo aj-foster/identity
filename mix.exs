@@ -38,8 +38,11 @@ defmodule Identity.MixProject do
       {:jason, "~> 1.0", only: [:dev, :test]},
       {:mix_test_watch, "~> 1.0", only: [:test], runtime: false},
       {:nimble_totp, "~> 0.1", optional: true},
+      {:phoenix, "~> 1.4", optional: true},
+      {:plug, "~> 1.7", optional: true},
       {:plug_crypto, "~> 1.0"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:ua_parser, "~> 1.8"}
     ]
   end
 
