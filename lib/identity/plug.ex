@@ -17,10 +17,14 @@ defmodule Identity.Plug do
   """
   alias Plug.Conn
 
-  # See also Identity.Session.
-  @max_age 60 * 60 * 24 * 60
-  @remember_me_cookie "_identity_user_remember_me"
-  @remember_me_options [sign: true, max_age: @max_age, same_site: "Lax"]
+  @remember_me_cookie_name Application.compile_env(:identity, :remember_me)[:name] ||
+                             "_identity_user_remember_me"
+  @remember_me_default_options [max_age: 5_184_000, same_site: "Lax", sign: true]
+  @remember_me_configuration Application.compile_env(:identity, :remember_me) || []
+  @remember_me_options Keyword.merge(
+                         @remember_me_default_options,
+                         Keyword.delete(@remember_me_configuration, :name)
+                       )
 
   #
   # Configured Paths
@@ -28,6 +32,7 @@ defmodule Identity.Plug do
 
   @sign_in_path Application.compile_env(:identity, :paths)[:sign_in] || "/"
   @after_sign_in_path Application.compile_env(:identity, :paths)[:after_sign_in] || "/"
+  @after_sign_out_path Application.compile_env(:identity, :paths)[:after_sign_out] || "/"
 
   #
   # Session Management
@@ -93,7 +98,7 @@ defmodule Identity.Plug do
 
   @spec maybe_write_remember_me_cookie(Conn.t(), String.t(), Conn.params()) :: Conn.t()
   defp maybe_write_remember_me_cookie(conn, token, true) do
-    Conn.put_resp_cookie(conn, @remember_me_cookie, token, @remember_me_options)
+    Conn.put_resp_cookie(conn, @remember_me_cookie_name, token, @remember_me_options)
   end
 
   defp maybe_write_remember_me_cookie(conn, _token, _params) do
@@ -120,9 +125,9 @@ defmodule Identity.Plug do
 
     conn
     |> renew_session()
-    |> Conn.delete_resp_cookie(@remember_me_cookie)
+    |> Conn.delete_resp_cookie(@remember_me_cookie_name)
     |> Conn.resp(:found, "")
-    |> Conn.put_resp_header("location", "/")
+    |> Conn.put_resp_header("location", @after_sign_out_path)
   end
 
   #
@@ -143,9 +148,9 @@ defmodule Identity.Plug do
     if user_token = Conn.get_session(conn, :user_token) do
       {user_token, conn}
     else
-      conn = Conn.fetch_cookies(conn, signed: [@remember_me_cookie])
+      conn = Conn.fetch_cookies(conn, signed: [@remember_me_cookie_name])
 
-      if user_token = conn.cookies[@remember_me_cookie] do
+      if user_token = conn.cookies[@remember_me_cookie_name] do
         {user_token, Conn.put_session(conn, :user_token, user_token)}
       else
         {nil, conn}

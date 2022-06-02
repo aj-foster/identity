@@ -7,7 +7,7 @@ defmodule Identity.Session do
   alias Identity.Token
   alias Identity.User
 
-  @expiration_days 60
+  @expiration_seconds Application.compile_env(:identity, :remember_me)[:max_age] || 5_184_000
 
   @type t :: %__MODULE__{
           client: String.t(),
@@ -77,7 +77,7 @@ defmodule Identity.Session do
     now = DateTime.utc_now()
 
     get_by_token_query(token)
-    |> where([session: s], s.inserted_at > ago(@expiration_days, "day"))
+    |> where([session: s], s.inserted_at > ago(@expiration_seconds, "second"))
     |> update(set: [last_active_at: ^now])
     |> select([session: s], %User{id: s.user_id})
   end
