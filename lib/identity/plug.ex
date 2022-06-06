@@ -1,7 +1,27 @@
 if Code.ensure_loaded?(Plug.Conn) do
   defmodule Identity.Plug do
+    @remember_me_default_name "_identity_user_remember_me"
+    @remember_me_default_options [max_age: 5_184_000, same_site: "Lax", sign: true]
+
     @moduledoc """
     Provides authentication helpers for Plug-based applications.
+
+    ## Remember Me
+
+    `log_in_user/3` optionally sets a "remember me" cookie to keep the user logged in after the
+    end of the browser session. This cookie is called "#{@remember_me_default_name}" by default, but
+    this can be configured using:
+
+        config :identity, remember_me: [name: "_my_app_remember_me"]
+
+    Additional options in the `:remember_me` configuration will be passed to the underlying
+    function `Plug.Conn.put_resp_cookie/4` to configure the cookie. The following options are set
+    by default:
+
+    | Key | Default | Description |
+    | `max_age` | `5_184_000` (60 days) | Time, in seconds, before the user is required to log in again. This setting also affects the expiration of persisted session records. |
+    | `same_site` | `"Lax"` | Value of the [SameSite cookie attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite). |
+    | `sign` | `true` | Whether to sign the cookie. See `Plug.Conn.put_resp_cookie/4` for more information. |
 
     ## Session Keys
 
@@ -18,23 +38,6 @@ if Code.ensure_loaded?(Plug.Conn) do
     """
     alias Plug.Conn
 
-    @remember_me_cookie_name Application.compile_env(:identity, :remember_me)[:name] ||
-                               "_identity_user_remember_me"
-    @remember_me_default_options [max_age: 5_184_000, same_site: "Lax", sign: true]
-    @remember_me_configuration Application.compile_env(:identity, :remember_me) || []
-    @remember_me_options Keyword.merge(
-                           @remember_me_default_options,
-                           Keyword.delete(@remember_me_configuration, :name)
-                         )
-
-    #
-    # Configured Paths
-    #
-
-    @sign_in_path Application.compile_env(:identity, :paths)[:sign_in] || "/"
-    @after_sign_in_path Application.compile_env(:identity, :paths)[:after_sign_in] || "/"
-    @after_sign_out_path Application.compile_env(:identity, :paths)[:after_sign_out] || "/"
-
     #
     # Session Management
     #
@@ -49,6 +52,9 @@ if Code.ensure_loaded?(Plug.Conn) do
 
       * `:remember_me` (boolean): Whether to set a "remember me" cookie to persist logins beyond the
         current browser session.
+
+      * `:to` (string): Path to send newly authenticated users if they don't have a destination
+        stored in the session. Defaults to `"/"`.
 
     ## Session Renewal
 
@@ -78,7 +84,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     def log_in_user(conn, user, opts \\ []) do
       client = opts[:client] || extract_client_name(conn)
       token = Identity.create_session(user, client)
-      user_return_to = Conn.get_session(conn, :user_return_to)
+      user_return_to = Conn.get_session(conn, :user_return_to) || opts[:to] || "/"
 
       conn
       |> renew_session()
@@ -86,7 +92,7 @@ if Code.ensure_loaded?(Plug.Conn) do
       |> Conn.put_session(:live_socket_id, "identity_sessions:#{Base.url_encode64(token)}")
       |> maybe_write_remember_me_cookie(token, opts[:remember_me])
       |> Conn.resp(:found, "")
-      |> Conn.put_resp_header("location", user_return_to || @after_sign_in_path)
+      |> Conn.put_resp_header("location", user_return_to)
     end
 
     @spec extract_client_name(Conn.t()) :: String.t()
@@ -97,15 +103,6 @@ if Code.ensure_loaded?(Plug.Conn) do
       |> to_string()
     end
 
-    @spec maybe_write_remember_me_cookie(Conn.t(), String.t(), Conn.params()) :: Conn.t()
-    defp maybe_write_remember_me_cookie(conn, token, true) do
-      Conn.put_resp_cookie(conn, @remember_me_cookie_name, token, @remember_me_options)
-    end
-
-    defp maybe_write_remember_me_cookie(conn, _token, _params) do
-      conn
-    end
-
     @spec renew_session(Conn.t()) :: Conn.t()
     defp renew_session(conn) do
       conn
@@ -113,22 +110,49 @@ if Code.ensure_loaded?(Plug.Conn) do
       |> Conn.clear_session()
     end
 
+    @spec maybe_write_remember_me_cookie(Conn.t(), String.t(), Conn.params()) :: Conn.t()
+    defp maybe_write_remember_me_cookie(conn, token, true) do
+      Conn.put_resp_cookie(conn, remember_me_cookie_name(), token, remember_me_cookie_options())
+    end
+
+    defp maybe_write_remember_me_cookie(conn, _token, _params) do
+      conn
+    end
+
+    defp remember_me_cookie_name do
+      Application.get_env(:identity, :remember_me)[:name] || @remember_me_default_name
+    end
+
+    defp remember_me_cookie_options do
+      config = Application.get_env(:identity, :remember_me) || []
+
+      Keyword.merge(
+        @remember_me_default_options,
+        Keyword.delete(config, :name)
+      )
+    end
+
     @doc """
     Log out the current user from their session.
 
     Similar to `log_in_user/3`, this function clears and renews the session. See `log_in_user/3` for
     an example of preserving data during session renewal.
+
+    ## Options
+
+      * `:to` (string): Path to send newly logged-out users. Defaults to `"/"`.
+
     """
     @spec log_out_user(Conn.t()) :: Conn.t()
-    def log_out_user(conn) do
+    def log_out_user(conn, opts \\ []) do
       user_token = Conn.get_session(conn, :user_token)
       user_token && Identity.delete_session(user_token)
 
       conn
       |> renew_session()
-      |> Conn.delete_resp_cookie(@remember_me_cookie_name)
+      |> Conn.delete_resp_cookie(remember_me_cookie_name())
       |> Conn.resp(:found, "")
-      |> Conn.put_resp_header("location", @after_sign_out_path)
+      |> Conn.put_resp_header("location", opts[:to] || "/")
     end
 
     #
@@ -149,9 +173,9 @@ if Code.ensure_loaded?(Plug.Conn) do
       if user_token = Conn.get_session(conn, :user_token) do
         {user_token, conn}
       else
-        conn = Conn.fetch_cookies(conn, signed: [@remember_me_cookie_name])
+        conn = Conn.fetch_cookies(conn, signed: [remember_me_cookie_name()])
 
-        if user_token = conn.cookies[@remember_me_cookie_name] do
+        if user_token = conn.cookies[remember_me_cookie_name()] do
           {user_token, Conn.put_session(conn, :user_token, user_token)}
         else
           {nil, conn}
@@ -164,8 +188,7 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     ## Options
 
-      * `:to`: Destination to redirect authenticated users. Defaults to the configured
-        `:after_sign_in` path.
+      * `:to`: Destination to redirect authenticated users. Defaults to `"/"`.
 
     ## Examples
 
@@ -181,7 +204,7 @@ if Code.ensure_loaded?(Plug.Conn) do
       if conn.assigns[:current_user] do
         conn
         |> Conn.resp(:found, "")
-        |> Conn.put_resp_header("location", opts[:to] || @after_sign_in_path)
+        |> Conn.put_resp_header("location", opts[:to] || "/")
         |> Conn.halt()
       else
         conn
@@ -196,8 +219,7 @@ if Code.ensure_loaded?(Plug.Conn) do
       * `:message` (string): Flash error message to display for redirected users. Defaults to
         "You must log in to access this page." Ignored if `Phoenix.Controller` is not available.
 
-      * `:to` (string): Destination to redirect unauthenticated users. Defaults to the configured
-        `:sign_in` path or `"/"`.
+      * `:to` (string): Destination to redirect unauthenticated users. Defaults to `"/"`.
 
     ## Examples
 
@@ -217,7 +239,7 @@ if Code.ensure_loaded?(Plug.Conn) do
         |> maybe_put_log_in_flash(opts[:message])
         |> maybe_store_return_to()
         |> Conn.resp(:found, "")
-        |> Conn.put_resp_header("location", opts[:to] || @sign_in_path)
+        |> Conn.put_resp_header("location", opts[:to] || "/")
         |> Conn.halt()
       end
     end
