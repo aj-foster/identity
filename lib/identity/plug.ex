@@ -110,28 +110,6 @@ if Code.ensure_loaded?(Plug.Conn) do
       |> Conn.clear_session()
     end
 
-    @spec maybe_write_remember_me_cookie(Conn.t(), String.t(), Conn.params()) :: Conn.t()
-    defp maybe_write_remember_me_cookie(conn, token, true) do
-      Conn.put_resp_cookie(conn, remember_me_cookie_name(), token, remember_me_cookie_options())
-    end
-
-    defp maybe_write_remember_me_cookie(conn, _token, _params) do
-      conn
-    end
-
-    defp remember_me_cookie_name do
-      Application.get_env(:identity, :remember_me)[:name] || @remember_me_default_name
-    end
-
-    defp remember_me_cookie_options do
-      config = Application.get_env(:identity, :remember_me) || []
-
-      Keyword.merge(
-        @remember_me_default_options,
-        Keyword.delete(config, :name)
-      )
-    end
-
     @doc """
     Log out the current user from their session.
 
@@ -263,6 +241,32 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     defp maybe_store_return_to(conn), do: conn
+
+    #
+    # Cookie Helpers
+    #
+
+    @spec maybe_write_remember_me_cookie(Conn.t(), String.t(), Conn.params()) :: Conn.t()
+    defp maybe_write_remember_me_cookie(conn, token, true) do
+      Conn.put_resp_cookie(conn, remember_me_cookie_name(), token, remember_me_cookie_options())
+    end
+
+    defp maybe_write_remember_me_cookie(conn, _token, _params) do
+      conn
+    end
+
+    defp remember_me_cookie_name do
+      Application.get_env(:identity, :remember_me)[:name] || @remember_me_default_name
+    end
+
+    defp remember_me_cookie_options do
+      config = Application.get_env(:identity, :remember_me) || []
+
+      Keyword.merge(
+        @remember_me_default_options,
+        Keyword.delete(config, :name)
+      )
+    end
 
     #
     # Path Helpers
