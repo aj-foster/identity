@@ -1,1 +1,35 @@
-Hello there!
+<div class="id_wrapper id_session_new">
+  <h2>Log in</h2>
+
+  <.form let={f} for={@conn} action={@routes.identity_path(@conn, :create_session)} as={:session}>
+    <%= if @error do %>
+      <div class="alert alert-danger">
+        <p><%= @error %></p>
+      </div>
+    <% end %>
+
+    <div class="id_field">
+      <%= label f, :email %>
+      <%= email_input f, :email, required: true %>
+    </div>
+
+    <div class="id_field">
+      <%= label f, :password %>
+      <%= password_input f, :password, required: true %>
+    </div>
+
+    <div class="id_field">
+      <%= label f, :remember_me, "Keep me logged in for 60 days" %>
+      <%= checkbox f, :remember_me %>
+    </div>
+
+    <div class="id_submit">
+      <%= submit "Log in" %>
+    </div>
+  </.form>
+
+  <div class="id_links">
+    <%# link "Register", to: @routes.identity_path(@conn, :new_user) %> |
+    <%# link "Forgot your password?", to: @routes.identity_path(@conn, :reset_password) %>
+  </div>
+</div>
