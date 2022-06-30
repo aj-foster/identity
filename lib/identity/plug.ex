@@ -45,6 +45,10 @@ if Code.ensure_loaded?(Plug.Conn) do
     @doc """
     Log in the given `user` to a new session.
 
+    This function does not redirect after setting up the session. To follow the post-login
+    destination stored in the connection, or to manually send the user to a different route after
+    login, see `log_in_and_redirect_user/3`.
+
     ## Options
 
       * `:client` (string): Name of the client logging in. Defaults to the browser/OS indicated by
@@ -53,13 +57,10 @@ if Code.ensure_loaded?(Plug.Conn) do
       * `:remember_me` (boolean): Whether to set a "remember me" cookie to persist logins beyond the
         current browser session.
 
-      * `:to` (string): Path to send newly authenticated users if they don't have a destination
-        stored in the session. Defaults to `"/"`.
-
     ## Session Renewal
 
     This function renews the session ID and clears the entire session to avoid fixation attacks. If
-    there is session data that should be preseved after log in (and log out), then it is necessary
+    there is session data that should be preserved after log in (and log out), then it is necessary
     to fetch and reset the data:
 
         my_session_data = get_session(conn, :my_session_data)
@@ -84,13 +85,31 @@ if Code.ensure_loaded?(Plug.Conn) do
     def log_in_user(conn, user, opts \\ []) do
       client = opts[:client] || extract_client_name(conn)
       token = Identity.create_session(user, client)
-      user_return_to = Conn.get_session(conn, :user_return_to) || opts[:to] || "/"
 
       conn
       |> renew_session()
       |> Conn.put_session(:user_token, token)
       |> Conn.put_session(:live_socket_id, "identity_sessions:#{Base.url_encode64(token)}")
       |> maybe_write_remember_me_cookie(token, opts[:remember_me])
+    end
+
+    @doc """
+    Log in the given `user` to a new session and redirect to another route.
+
+    ## Options
+
+    In addition to the options offered by `log_in_user/3`, this function also accepts:
+
+      * `:to` (string): Path to send newly authenticated users if they don't have a destination
+        stored in the session. Defaults to `"/"`.
+
+    """
+    @spec log_in_and_redirect_user(Conn.t(), Identity.User.t(), keyword) :: Conn.t()
+    def log_in_and_redirect_user(conn, user, opts \\ []) do
+      user_return_to = Conn.get_session(conn, :user_return_to) || opts[:to] || "/"
+
+      conn
+      |> log_in_user(user, opts)
       |> Conn.resp(:found, "")
       |> Conn.put_resp_header("location", user_return_to)
     end
@@ -105,9 +124,12 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     @spec renew_session(Conn.t()) :: Conn.t()
     defp renew_session(conn) do
+      user_return_to = Conn.get_session(conn, :user_return_to)
+
       conn
       |> Conn.configure_session(renew: true)
       |> Conn.clear_session()
+      |> Conn.put_session(:user_return_to, user_return_to)
     end
 
     @doc """
