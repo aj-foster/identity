@@ -8,6 +8,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     alias Plug.Conn
 
     @session_2fa_pending :session_2fa_pending
+    @session_remember_me_pending :session_remember_me_pending
 
     plug :put_new_view, Identity.Phoenix.View
 
@@ -27,7 +28,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           "session" => %{
             "email" => email,
             "password" => password,
-            "remember_me" => remember_me  # Optional
+            "remember_me" => remember_me  # Optional, "true" when desired
           }
         }
 
@@ -36,26 +37,32 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     """
     @spec create_session(Conn.t(), Conn.params()) :: Conn.t()
     def create_session(conn, %{"session" => session_params}) do
-      routes = :"#{router_module(conn)}.Helpers"
       %{"email" => email, "password" => password} = session_params
+      remember_me = session_params["remember_me"] == "true"
+      routes = :"#{router_module(conn)}.Helpers"
 
       if user = Identity.get_user_by_email_and_password(email, password) do
         # TODO: Can we preload the login on the user?
         if Identity.enabled_2fa?(user) do
-          post_2fa_params = Map.take(session_params, ["remember_me"])
-
           conn
           |> Identity.Plug.log_in_user(user, remember_me: false)
           |> put_session(@session_2fa_pending, true)
-          |> redirect(to: routes.identity_path(conn, :new_2fa, user: post_2fa_params))
+          |> put_session(@session_remember_me_pending, remember_me)
+          |> redirect(to: routes.identity_path(conn, :new_2fa))
         else
-          remember_me = session_params["remember_me"] == "true"
           Identity.Plug.log_in_and_redirect_user(conn, user, remember_me: remember_me)
         end
       else
         routes = :"#{router_module(conn)}.Helpers"
         render(conn, "new_session.html", error: "Invalid e-mail or password", routes: routes)
       end
+    end
+
+    @doc "Render a 2FA form with no active error message."
+    @spec new_2fa(Conn.t(), Conn.params()) :: Conn.t()
+    def new_2fa(conn, _params) do
+      routes = :"#{router_module(conn)}.Helpers"
+      render(conn, "new_2fa.html", error: nil, routes: routes)
     end
   end
 end

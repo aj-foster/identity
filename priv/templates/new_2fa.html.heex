@@ -1,0 +1,26 @@
+<div class="id_wrapper id_session_new_2fa">
+  <h2>2-Factor Authentication</h2>
+  <p>Enter the six-digit code from your device, or any of your eight-character backup codes.</p>
+
+  <.form let={f} for={@conn} action={@routes.identity_path(@conn, :validate_2fa)} as={:session}>
+    <%= if @error do %>
+      <div class="alert alert-danger">
+        <p><%= @error %></p>
+      </div>
+    <% end %>
+
+    <div class="id_field">
+      <%= label f, :code %>
+      <%= text_input f, :code, required: true %>
+    </div>
+
+    <div class="id_submit">
+      <%= submit "Log in" %>
+    </div>
+  </.form>
+
+  <div class="id_links">
+    <%# link "Log out", to: @routes.identity_path(@conn, :delete_session) %> |
+    <%# link "Forgot your password?", to: @routes.identity_path(@conn, :reset_password) %>
+  </div>
+</div>

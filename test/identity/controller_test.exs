@@ -87,4 +87,11 @@ defmodule Identity.ControllerTest do
       refute conn.resp_cookies["_identity_user_remember_me"]
     end
   end
+
+  describe "new_2fa/2" do
+    test "renders 2FA form", %{conn: conn} do
+      conn = get(conn, "/session/2fa")
+      assert html_response(conn, 200) =~ "form action=\"/session/2fa\""
+    end
+  end
 end
