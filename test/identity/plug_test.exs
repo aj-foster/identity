@@ -8,7 +8,6 @@ defmodule Identity.PlugTest do
       conn = Identity.Plug.log_in_user(conn, user)
       assert token = get_session(conn, :user_token)
       assert get_session(conn, :live_socket_id) == "identity_sessions:#{Base.url_encode64(token)}"
-      assert redirected_to(conn) == "/"
       assert Identity.get_user_by_session(token)
     end
 
@@ -17,17 +16,62 @@ defmodule Identity.PlugTest do
       refute get_session(conn, :to_be_removed)
     end
 
-    test "redirects to the configured path", %{conn: conn, user: user} do
-      conn = conn |> put_session(:user_return_to, "/hello") |> Identity.Plug.log_in_user(user)
-      assert redirected_to(conn) == "/hello"
-    end
-
-    test "writes a cookie if remember_me is configured", %{conn: conn, user: user} do
+    test "optionally writes a remember me cookie", %{conn: conn, user: user} do
       conn = conn |> fetch_cookies() |> Identity.Plug.log_in_user(user, remember_me: true)
       assert get_session(conn, :user_token) == conn.cookies[@remember_me_cookie]
       assert %{value: signed_token, max_age: max_age} = conn.resp_cookies[@remember_me_cookie]
       assert signed_token != get_session(conn, :user_token)
       assert max_age == 5_184_000
+    end
+
+    test "optionally marks login as pending", %{conn: conn, user: user} do
+      conn = Identity.Plug.log_in_user(conn, user, pending: true)
+      assert get_session(conn, :user_token)
+      assert get_session(conn, :user_pending) == true
+    end
+  end
+
+  describe "log_in_and_redirect_user/3" do
+    test "stores the user token in the session", %{conn: conn, user: user} do
+      conn = Identity.Plug.log_in_and_redirect_user(conn, user)
+      assert token = get_session(conn, :user_token)
+      assert get_session(conn, :live_socket_id) == "identity_sessions:#{Base.url_encode64(token)}"
+      assert redirected_to(conn) == "/"
+      assert Identity.get_user_by_session(token)
+    end
+
+    test "clears everything previously stored in the session", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> put_session(:to_be_removed, "value")
+        |> Identity.Plug.log_in_and_redirect_user(user)
+
+      refute get_session(conn, :to_be_removed)
+    end
+
+    test "redirects to the configured path", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> put_session(:user_return_to, "/hello")
+        |> Identity.Plug.log_in_and_redirect_user(user)
+
+      assert redirected_to(conn) == "/hello"
+    end
+
+    test "optionally writes a remember me cookie", %{conn: conn, user: user} do
+      conn =
+        conn |> fetch_cookies() |> Identity.Plug.log_in_and_redirect_user(user, remember_me: true)
+
+      assert get_session(conn, :user_token) == conn.cookies[@remember_me_cookie]
+      assert %{value: signed_token, max_age: max_age} = conn.resp_cookies[@remember_me_cookie]
+      assert signed_token != get_session(conn, :user_token)
+      assert max_age == 5_184_000
+    end
+
+    test "optionally marks login as pending", %{conn: conn, user: user} do
+      conn = Identity.Plug.log_in_and_redirect_user(conn, user, pending: true)
+      assert get_session(conn, :user_pending) == true
+      assert redirected_to(conn) == "/"
     end
   end
 
@@ -106,6 +150,17 @@ defmodule Identity.PlugTest do
       refute conn.halted
       refute conn.status
     end
+
+    test "does not redirect if the login is pending", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> assign(:current_user, user)
+        |> put_session(:user_pending, true)
+        |> Identity.Plug.redirect_if_user_is_authenticated([])
+
+      refute conn.halted
+      refute conn.status
+    end
   end
 
   describe "require_authenticated_user/2" do
@@ -155,6 +210,19 @@ defmodule Identity.PlugTest do
       conn = conn |> assign(:current_user, user) |> Identity.Plug.require_authenticated_user([])
       refute conn.halted
       refute conn.status
+    end
+
+    test "redirects if the login is pending", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> fetch_flash()
+        |> assign(:current_user, user)
+        |> put_session(:user_pending, true)
+        |> Identity.Plug.require_authenticated_user([])
+
+      assert conn.halted
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) == "You must log in to access this page."
     end
   end
 end

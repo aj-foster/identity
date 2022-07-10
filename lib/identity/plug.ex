@@ -2,6 +2,7 @@ if Code.ensure_loaded?(Plug.Conn) do
   defmodule Identity.Plug do
     @remember_me_default_name "_identity_user_remember_me"
     @remember_me_default_options [max_age: 5_184_000, same_site: "Lax", sign: true]
+    @session_pending :user_pending
 
     @moduledoc """
     Provides authentication helpers for Plug-based applications.
@@ -30,6 +31,10 @@ if Code.ensure_loaded?(Plug.Conn) do
       * `:live_socket_id`: Used to inform Phoenix LiveView when the user logs out. See
         `log_in_user/3` for more information.
 
+      * `:#{@session_pending}`: Indicates whether a login is incomplete (for example, the user has
+        passed password authentication but not 2-factor authentication). See `log_in_user/3` for
+        more information.
+
       * `:user_return_to`: When an unauthenticated user is redirected to the login page, this key
         stores the original destination so that the user can return there after login.
 
@@ -54,8 +59,11 @@ if Code.ensure_loaded?(Plug.Conn) do
       * `:client` (string): Name of the client logging in. Defaults to the browser/OS indicated by
         the `User-Agent` header and parsed by `UAParser`.
 
+      * `:pending` (boolean): Whether the login is pending, meaning the user has been identified
+        but not fully authenticated. Useful in 2-factor login flows. Defaults to `false`.
+
       * `:remember_me` (boolean): Whether to set a "remember me" cookie to persist logins beyond the
-        current browser session.
+        current browser session. Defaults to `false`.
 
     ## Session Renewal
 
@@ -89,6 +97,7 @@ if Code.ensure_loaded?(Plug.Conn) do
       conn
       |> renew_session()
       |> Conn.put_session(:user_token, token)
+      |> Conn.put_session(@session_pending, opts[:pending] == true)
       |> Conn.put_session(:live_socket_id, "identity_sessions:#{Base.url_encode64(token)}")
       |> maybe_write_remember_me_cookie(token, opts[:remember_me])
     end
@@ -184,7 +193,9 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     @doc """
-    Require that a user is **not** logged in.
+    Require that a user is **not** logged in, and redirect otherwise.
+
+    Does not redirect if the user's login is pending. See `log_in_user/3` for more information.
 
     ## Options
 
@@ -201,7 +212,9 @@ if Code.ensure_loaded?(Plug.Conn) do
     """
     @spec redirect_if_user_is_authenticated(Conn.t(), keyword) :: Conn.t()
     def redirect_if_user_is_authenticated(conn, opts) do
-      if conn.assigns[:current_user] do
+      pending? = Conn.get_session(conn, @session_pending) == true
+
+      if conn.assigns[:current_user] && !pending? do
         conn
         |> Conn.resp(:found, "")
         |> Conn.put_resp_header("location", opts[:to] || "/")
@@ -212,7 +225,9 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     @doc """
-    Require that a user is logged in.
+    Require that a user is logged in, and redirect otherwise.
+
+    Also redirects if the user's login is pending. See `log_in_user/3` for more information.
 
     ## Options
 
@@ -232,7 +247,9 @@ if Code.ensure_loaded?(Plug.Conn) do
     """
     @spec require_authenticated_user(Conn.t(), keyword) :: Conn.t()
     def require_authenticated_user(conn, opts) do
-      if conn.assigns[:current_user] do
+      pending? = Conn.get_session(conn, @session_pending) == true
+
+      if conn.assigns[:current_user] && !pending? do
         conn
       else
         conn
