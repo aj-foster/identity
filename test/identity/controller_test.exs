@@ -1,5 +1,5 @@
 defmodule Identity.ControllerTest do
-  use Identity.ConnCase
+  use Identity.ConnCase, async: true
 
   describe "new_session/2" do
     test "renders login form", %{conn: conn} do
@@ -79,19 +79,75 @@ defmodule Identity.ControllerTest do
       otp = NimbleTOTP.verification_code(otp_secret)
       Identity.enable_2fa(changeset, otp)
 
-      params = %{"session" => %{"email" => email, "password" => password}}
+      params = %{
+        "session" => %{"email" => email, "password" => password, "remember_me" => "true"}
+      }
+
       conn = post(conn, "/session/new", params)
 
       assert redirected_to(conn) == "/session/2fa"
-      assert get_session(conn, :session_2fa_pending)
+      assert get_session(conn, :user_pending)
       refute conn.resp_cookies["_identity_user_remember_me"]
     end
   end
 
   describe "new_2fa/2" do
     test "renders 2FA form", %{conn: conn} do
-      conn = get(conn, "/session/2fa")
+      user = Factory.insert(:user)
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user, pending: true)
+        |> get("/session/2fa")
+
       assert html_response(conn, 200) =~ "form action=\"/session/2fa\""
+    end
+  end
+
+  describe "validate_2fa/2" do
+    setup do
+      user = Factory.insert(:user)
+      Factory.insert(:basic_login, user: user)
+
+      %{user: user}
+    end
+
+    test "accepts a valid 2FA code", %{conn: conn, user: user} do
+      changeset = Identity.request_enable_2fa(user)
+      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
+      otp = NimbleTOTP.verification_code(otp_secret)
+      Identity.enable_2fa(changeset, otp)
+
+      params = %{"session" => %{"code" => otp}}
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user, pending: true)
+        |> put_session(:session_remember_me_pending, true)
+        |> post("/session/2fa", params)
+
+      assert redirected_to(conn) == "/"
+      refute get_session(conn, :user_pending)
+      assert conn.resp_cookies["_identity_user_remember_me"]
+    end
+
+    test "rejects an invalid 2FA code", %{conn: conn, user: user} do
+      changeset = Identity.request_enable_2fa(user)
+      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
+      otp = NimbleTOTP.verification_code(otp_secret)
+      Identity.enable_2fa(changeset, otp)
+
+      params = %{"session" => %{"code" => "000000"}}
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user, pending: true)
+        |> put_session(:session_remember_me_pending, true)
+        |> post("/session/2fa", params)
+
+      assert html_response(conn, 200) =~ "form action=\"/session/2fa\""
+      assert get_session(conn, :user_pending)
+      refute conn.resp_cookies["_identity_user_remember_me"]
     end
   end
 end
