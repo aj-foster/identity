@@ -225,4 +225,71 @@ defmodule Identity.PlugTest do
       assert get_flash(conn, :error) == "You must log in to access this page."
     end
   end
+
+  describe "require_pending_login/2" do
+    test "redirects if user is not authenticated", %{conn: conn} do
+      conn = conn |> fetch_flash() |> Identity.Plug.require_pending_login([])
+      assert conn.halted
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) == "You must log in to access this page."
+    end
+
+    test "redirects if the login is not pending", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> fetch_flash()
+        |> Identity.Plug.log_in_user(user)
+        |> Identity.Plug.require_pending_login([])
+
+      assert conn.halted
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) == "You must log in to access this page."
+    end
+
+    test "stores the path to redirect to on GET", %{conn: conn} do
+      halted_conn =
+        %{conn | path_info: ["foo"], query_string: ""}
+        |> fetch_flash()
+        |> Identity.Plug.require_pending_login([])
+
+      assert halted_conn.halted
+      assert get_session(halted_conn, :user_return_to) == "/foo"
+
+      halted_conn =
+        %{conn | path_info: ["foo"], query_string: "bar=baz"}
+        |> fetch_flash()
+        |> Identity.Plug.require_pending_login([])
+
+      assert halted_conn.halted
+      assert get_session(halted_conn, :user_return_to) == "/foo?bar=baz"
+
+      halted_conn =
+        %{conn | path_info: ["foo"], query_string: "bar", method: "POST"}
+        |> fetch_flash()
+        |> Identity.Plug.require_pending_login([])
+
+      assert halted_conn.halted
+      refute get_session(halted_conn, :user_return_to)
+    end
+
+    test "uses configured message", %{conn: conn} do
+      conn =
+        conn
+        |> fetch_flash()
+        |> Identity.Plug.require_pending_login(message: "Custom message")
+
+      assert get_flash(conn, :error) == "Custom message"
+    end
+
+    test "does not redirect if the login is pending", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> assign(:current_user, user)
+        |> put_session(:user_pending, true)
+        |> Identity.Plug.require_pending_login([])
+
+      refute conn.halted
+      refute conn.status
+    end
+  end
 end

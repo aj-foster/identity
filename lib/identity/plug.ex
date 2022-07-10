@@ -281,6 +281,36 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp maybe_store_return_to(conn), do: conn
 
+    @doc """
+    Require that the user has been identified, but login is incomplete.
+
+    See `log_in_user/3` for more information.
+
+    ## Options
+
+      * `:message` (string): Flash error message to display for redirected users. Defaults to
+        "You must log in to access this page." Ignored if `Phoenix.Controller` is not available.
+
+      * `:to` (string): Destination to redirect unauthenticated or fully authenticated users.
+        Defaults to `"/"`.
+
+    """
+    @spec require_pending_login(Conn.t(), keyword) :: Conn.t()
+    def require_pending_login(conn, opts) do
+      pending? = Conn.get_session(conn, @session_pending) == true
+
+      if pending? do
+        conn
+      else
+        conn
+        |> maybe_put_log_in_flash(opts[:message])
+        |> maybe_store_return_to()
+        |> Conn.resp(:found, "")
+        |> Conn.put_resp_header("location", opts[:to] || "/")
+        |> Conn.halt()
+      end
+    end
+
     #
     # Cookie Helpers
     #
