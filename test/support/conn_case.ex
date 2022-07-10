@@ -27,7 +27,10 @@ defmodule Identity.ConnCase do
   setup do
     conn =
       Phoenix.ConnTest.build_conn()
-      |> Map.replace!(:secret_key_base, "secret")
+      |> Map.replace!(
+        :secret_key_base,
+        "1234567890123456789012345678901234567890123456789012345678901234567890"
+      )
       |> Plug.Test.init_test_session(%{})
 
     user = Identity.Test.Factory.insert(:user)

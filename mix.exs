@@ -26,7 +26,7 @@ defmodule Identity.MixProject do
   def application do
     if Mix.env() == :test do
       [
-        extra_applications: [:logger, :ranch, :ex_machina],
+        extra_applications: [:logger, :ranch, :ex_machina, :plug, :plug_crypto],
         mod: {Identity.Test.Application, []}
       ]
     else

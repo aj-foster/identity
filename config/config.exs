@@ -6,7 +6,7 @@ config :identity, Identity.Test.Endpoint,
   code_reloader: false,
   debug_errors: true,
   http: [port: 4000],
-  secret_key_base: "secret",
+  secret_key_base: :binary.copy("secret", 12),
   server: true,
   url: [host: "localhost"]
 

@@ -4,7 +4,7 @@ if Code.ensure_loaded?(Phoenix.Endpoint) do
 
     @session_options [
       store: :cookie,
-      key: "_apprise_key",
+      key: "_identity_key",
       signing_salt: "tSfoAn16"
     ]
 
