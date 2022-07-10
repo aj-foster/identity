@@ -2,7 +2,11 @@ if Code.ensure_loaded?(Plug.Conn) do
   defmodule Identity.Plug do
     @remember_me_default_name "_identity_user_remember_me"
     @remember_me_default_options [max_age: 5_184_000, same_site: "Lax", sign: true]
+
+    @session_live_id :live_socket_id
     @session_pending :user_pending
+    @session_return :user_return_to
+    @session_token :user_token
 
     @moduledoc """
     Provides authentication helpers for Plug-based applications.
@@ -28,17 +32,17 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     Identity uses the following session keys, which should not be modified by your application:
 
-      * `:live_socket_id`: Used to inform Phoenix LiveView when the user logs out. See
+      * `:#{@session_live_id}`: Used to inform Phoenix LiveView when the user logs out. See
         `log_in_user/3` for more information.
 
       * `:#{@session_pending}`: Indicates whether a login is incomplete (for example, the user has
         passed password authentication but not 2-factor authentication). See `log_in_user/3` for
         more information.
 
-      * `:user_return_to`: When an unauthenticated user is redirected to the login page, this key
+      * `:#{@session_return}`: When an unauthenticated user is redirected to the login page, this key
         stores the original destination so that the user can return there after login.
 
-      * `:user_token`: Session token, used for user lookup.
+      * `:#{@session_token}`: Session token, used for user lookup.
 
     """
     alias Plug.Conn
@@ -77,10 +81,10 @@ if Code.ensure_loaded?(Plug.Conn) do
         |> log_in_user(user, params)
         |> put_session(:my_session_data, my_session_data)
 
-    If using Phoenix LiveView, this function also sets a `:live_socket_id` key in the session. You
+    If using Phoenix LiveView, this function also sets a `:#{@session_live_id}` key in the session. You
     may use this to automatically disconnect LiveView sessions when a user logs out:
 
-        if live_socket_id = get_session(conn, :live_socket_id) do
+        if live_socket_id = get_session(conn, :#{@session_live_id}) do
           MyAppWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
         end
 
@@ -96,9 +100,9 @@ if Code.ensure_loaded?(Plug.Conn) do
 
       conn
       |> renew_session()
-      |> Conn.put_session(:user_token, token)
+      |> Conn.put_session(@session_token, token)
       |> Conn.put_session(@session_pending, opts[:pending] == true)
-      |> Conn.put_session(:live_socket_id, "identity_sessions:#{Base.url_encode64(token)}")
+      |> Conn.put_session(@session_live_id, "identity_sessions:#{Base.url_encode64(token)}")
       |> maybe_write_remember_me_cookie(token, opts[:remember_me])
     end
 
@@ -115,7 +119,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     """
     @spec log_in_and_redirect_user(Conn.t(), Identity.User.t(), keyword) :: Conn.t()
     def log_in_and_redirect_user(conn, user, opts \\ []) do
-      user_return_to = Conn.get_session(conn, :user_return_to) || opts[:to] || "/"
+      user_return_to = Conn.get_session(conn, @session_return) || opts[:to] || "/"
 
       conn
       |> log_in_user(user, opts)
@@ -133,12 +137,12 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     @spec renew_session(Conn.t()) :: Conn.t()
     defp renew_session(conn) do
-      user_return_to = Conn.get_session(conn, :user_return_to)
+      user_return_to = Conn.get_session(conn, @session_return)
 
       conn
       |> Conn.configure_session(renew: true)
       |> Conn.clear_session()
-      |> Conn.put_session(:user_return_to, user_return_to)
+      |> Conn.put_session(@session_return, user_return_to)
     end
 
     @doc """
@@ -154,7 +158,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     """
     @spec log_out_user(Conn.t()) :: Conn.t()
     def log_out_user(conn, opts \\ []) do
-      user_token = Conn.get_session(conn, :user_token)
+      user_token = Conn.get_session(conn, @session_token)
       user_token && Identity.delete_session(user_token)
 
       conn
@@ -179,13 +183,13 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     @spec ensure_user_token(Plug.Conn.t()) :: {String.t() | nil, Plug.Conn.t()}
     defp ensure_user_token(conn) do
-      if user_token = Conn.get_session(conn, :user_token) do
+      if user_token = Conn.get_session(conn, @session_token) do
         {user_token, conn}
       else
         conn = Conn.fetch_cookies(conn, signed: [remember_me_cookie_name()])
 
         if user_token = conn.cookies[remember_me_cookie_name()] do
-          {user_token, Conn.put_session(conn, :user_token, user_token)}
+          {user_token, Conn.put_session(conn, @session_token, user_token)}
         else
           {nil, conn}
         end
@@ -276,7 +280,7 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     @spec maybe_store_return_to(Conn.t()) :: Conn.t()
     defp maybe_store_return_to(%{method: "GET"} = conn) do
-      Conn.put_session(conn, :user_return_to, current_path(conn))
+      Conn.put_session(conn, @session_return, current_path(conn))
     end
 
     defp maybe_store_return_to(conn), do: conn
