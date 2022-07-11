@@ -56,7 +56,16 @@ defmodule Identity.MixProject do
 
   defp docs do
     [
-      main: "Identity"
+      main: "readme",
+      extras: [
+        "README.md": [title: "Overview"],
+        "guides/getting-started.md": [title: "Getting Started"],
+        "guides/progressive-replacement.md": [title: "Progressive Replacement"]
+      ],
+      groups_for_functions: [
+        "Password Login": &(&1[:section] == :session),
+        "Two Factor": &(&1[:section] == :mfa)
+      ]
     ]
   end
 

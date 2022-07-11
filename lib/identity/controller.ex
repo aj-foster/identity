@@ -2,6 +2,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
   defmodule Identity.Controller do
     @moduledoc """
     Provides Phoenix controller actions for common identity-related actions.
+
+    This module is part of a [Progressive Replacement](guides/progressive-replacement.md) plan. See
+    that document for examples of the various ways to use this functionality.
     """
     use Phoenix.Controller, put_default_views: false, namespace: Identity
     import Identity.Plug
@@ -20,7 +23,20 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     plug :require_pending_login when action in [:new_2fa, :validate_2fa]
     plug :fetch_current_user when action in [:validate_2fa]
 
-    @doc "Render a login form with no active error message."
+    #
+    # Password Login
+    #
+
+    @doc """
+    Render a login form with no active error message.
+
+    This action provides a traditional, distinct login page for password-based logins. This action
+    may not be necessary if all logins occur through another route, for example the app's home page.
+
+    Renders `new_session.html` with assigns `error: nil` and `routes` with the endpoint's route
+    helper module.
+    """
+    @doc section: :session
     @spec new_session(Conn.t(), Conn.params()) :: Conn.t()
     def new_session(conn, _params) do
       routes = :"#{router_module(conn)}.Helpers"
@@ -43,6 +59,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     In the event of a login failure, the user will see `new_session.html` with a generic error
     message (set using the `:error` assign) to prevent account enumeration.
     """
+    @doc section: :session
     @spec create_session(Conn.t(), Conn.params()) :: Conn.t()
     def create_session(conn, %{"session" => session_params}) do
       %{"email" => email, "password" => password} = session_params
@@ -67,7 +84,12 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       end
     end
 
+    #
+    # Two-Factor Authentication
+    #
+
     @doc "Render a 2FA form with no active error message."
+    @doc section: :mfa
     @spec new_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def new_2fa(conn, _params) do
       routes = :"#{router_module(conn)}.Helpers"
@@ -88,6 +110,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     In the event of a login failure, the user will see `new_2fa.html` with an error message set
     using the `:error` assign.
     """
+    @doc section: :mfa
     @spec validate_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def validate_2fa(conn, %{"session" => %{"code" => code}}) do
       user = conn.assigns[:current_user]
