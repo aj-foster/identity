@@ -36,6 +36,17 @@ defmodule IdentityTest do
     end
   end
 
+  describe "fetch_user/1" do
+    test "returns error if ID is invalid" do
+      assert {:error, :not_found} = Identity.fetch_user("11111111-1111-1111-1111-111111111111")
+    end
+
+    test "returns the user with the given ID" do
+      %{id: user_id} = Factory.insert(:user)
+      assert {:ok, %User{id: ^user_id}} = Identity.fetch_user(user_id)
+    end
+  end
+
   #
   # Basic Logins
   #

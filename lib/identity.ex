@@ -21,13 +21,58 @@ defmodule Identity do
   # Users
   #
 
-  @doc "Gets a single user by ID, or `nil` if the user does not exist."
+  @doc """
+  Get a single user by ID, or `nil` if the user does not exist.
+
+  ## Examples
+
+      iex> Identity.get_user("c4904ead-264d-4ba1-960d-68b49b8e0e10")
+      %Identity.User{id: "c4904ead-264d-4ba1-960d-68b49b8e0e10"}
+
+      iex> Identity.get_user("43cabfe9-1dfd-4946-a58e-9348a2aaf84b")
+      nil
+
+  """
+  @doc section: :user
   @spec get_user(Ecto.UUID.t()) :: User.t() | nil
   def get_user(id), do: repo().get(User, id)
 
-  @doc "Gets a single user by ID, raising if the user does not exist."
+  @doc """
+  Get a single user by ID, raising if the user does not exist.
+
+    ## Examples
+
+      iex> Identity.get_user("c4904ead-264d-4ba1-960d-68b49b8e0e10")
+      %Identity.User{id: "c4904ead-264d-4ba1-960d-68b49b8e0e10"}
+
+      iex> Identity.get_user("43cabfe9-1dfd-4946-a58e-9348a2aaf84b")
+      ** (Ecto.NoResultsError)
+
+  """
+  @doc section: :user
   @spec get_user!(Ecto.UUID.t()) :: User.t() | no_return
   def get_user!(id), do: repo().get!(User, id)
+
+  @doc """
+  Get a single user by ID, returning `{:ok, user}` or `{:error, :not_found}`.
+
+    ## Examples
+
+      iex> Identity.get_user("c4904ead-264d-4ba1-960d-68b49b8e0e10")
+      {:ok, %Identity.User{id: "c4904ead-264d-4ba1-960d-68b49b8e0e10"}}
+
+      iex> Identity.get_user("43cabfe9-1dfd-4946-a58e-9348a2aaf84b")
+      {:error, :not_found}
+
+  """
+  @doc section: :user
+  @spec fetch_user(Ecto.UUID.t()) :: {:ok, User.t()} | {:error, :not_found}
+  def fetch_user(id) do
+    case repo().get(User, id) do
+      %User{} = user -> {:ok, user}
+      nil -> {:error, :not_found}
+    end
+  end
 
   #
   # Basic Logins
@@ -92,7 +137,23 @@ defmodule Identity do
     end
   end
 
-  @doc "Generate a new 2FA secret to prompt the user for a code."
+  #
+  # Two-Factor
+  #
+
+  @doc """
+  Generate a new 2FA secret to prompt the user for a code.
+
+  The returned changeset includes an uncommitted `otp_secret`. This code can be used to create a
+  QR code and generate a two-factor code for verifying the OTP setup using `enable_2fa/2`.
+
+  ## Examples
+
+      iex> Identity.request_enable_2fa(user)
+      #Ecto.Changeset<changes: %{otp_secret: "**redacted**"}>
+
+  """
+  @doc section: :mfa
   @spec request_enable_2fa(User.t()) :: Ecto.Changeset.t(BasicLogin.t())
   def request_enable_2fa(user) do
     BasicLogin.get_login_by_user_query(user)
@@ -105,7 +166,14 @@ defmodule Identity do
 
   This function will first ensure the supplied 6-digit code is valid. If successful, a set of 10
   backup codes will be returned.
+
+  ## Examples
+
+      iex> Identity.enable_2fa(login_changeset, "123456")
+      {:ok, ["abcd1234", ...]}
+
   """
+  @doc section: :mfa
   @spec enable_2fa(Ecto.Changeset.t(BasicLogin.t()), String.t()) ::
           {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
   def enable_2fa(login_changeset, code) do
@@ -121,14 +189,37 @@ defmodule Identity do
     end
   end
 
-  @doc "Check whether 2FA is enabled for the given `user`."
+  @doc """
+  Check whether 2FA is enabled for the given `user`.
+
+  ## Examples
+
+      iex> Identity.enabled_2fa?(user)
+      false
+
+  """
+  @doc section: :mfa
   @spec enabled_2fa?(User.t()) :: boolean
   def enabled_2fa?(user) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
     not is_nil(basic_login) and not is_nil(basic_login.otp_secret)
   end
 
-  @doc "Validate the given 2FA or backup `code` for the given `user`."
+  @doc """
+  Validate the given 2FA or backup `code` for the given `user`.
+
+  If a backup code is used, it will be marked as unavailable for future use.
+
+  ## Examples
+
+      iex> Identity.valid_2fa?(user, "123456")
+      false
+
+      iex> Identity.valid_2fa?(user, "abcd1234")
+      true
+
+  """
+  @doc section: :mfa
   @spec valid_2fa?(User.t(), String.t()) :: boolean
   def valid_2fa?(user, code) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
@@ -149,7 +240,18 @@ defmodule Identity do
     end
   end
 
-  @doc "Regenerate 2FA backup codes for the given `user`."
+  @doc """
+  Regenerate 2FA backup codes for the given `user`.
+
+  All previous backup codes (if any) will no longer be valid.
+
+  ## Examples
+
+      iex> Identity.regenerate_2fa_backup_codes(user)
+      {:ok, ["abcd1234", ...]}
+
+  """
+  @doc section: :mfa
   @spec regenerate_2fa_backup_codes(User.t()) ::
           {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
   def regenerate_2fa_backup_codes(user) do
@@ -167,7 +269,16 @@ defmodule Identity do
     end
   end
 
-  @doc "Disable 2FA for the given `user`."
+  @doc """
+  Disable 2FA for the given `user`.
+
+  ## Examples
+
+      iex> Identity.disable_2fa(user)
+      :ok
+
+  """
+  @doc section: :mfa
   @spec disable_2fa(User.t()) :: :ok | {:error, :not_found}
   def disable_2fa(user) do
     BasicLogin.disable_2fa_query(user)
@@ -283,7 +394,19 @@ defmodule Identity do
   # Sessions
   #
 
-  @doc "Create a session for the given `user` and `client`, returning an unencoded token."
+  @doc """
+  Create a session for the given `user` and `client`, returning an unencoded (non-printable)
+  session token.
+
+  The returned token is compatible with storing in a Plug session.
+
+  ## Examples
+
+      iex> Identity.create_session(user, "Firefox 100 on macOS 15")
+      <<85, 185, 223, 71, 133, 31, 168, 86, 216, 65, 136, 158, ...>>
+
+  """
+  @doc section: :session
   @spec create_session(User.t(), String.t()) :: binary
   def create_session(user, client) do
     Session.build_token(user, client)
@@ -291,7 +414,22 @@ defmodule Identity do
     |> Map.get(:token)
   end
 
-  @doc "Get the user associated with the given binary (non-printable) session `token`."
+  @doc """
+  Get the user associated with the given unencoded (non-printable) session `token`.
+
+  The token is expected to be in the same form as returned by `create_session/2`. In addition to
+  returning the user, this function also sets a "last active at" timestamp on the session.
+
+  ## Examples
+
+      iex> Identity.get_user_by_session(<<85, 185, 223, ...>>)
+      %User{id: "5374240f-944c-47c9-83a8-cfafc01473cb"}
+
+      iex> Identity.get_user_by_session(<<71, 133, 31, ...>>)
+      nil
+
+  """
+  @doc section: :session
   @spec get_user_by_session(binary) :: User.t() | nil
   def get_user_by_session(token) do
     Session.verify_token_query(token)
@@ -302,7 +440,18 @@ defmodule Identity do
     end
   end
 
-  @doc "Revoke a single session by its `token`."
+  @doc """
+  Revoke a single session by its `token`.
+
+  Returns `:ok` regardless of whether a session was deleted.
+
+  ## Examples
+
+      iex> Identity.delete_session(<<85, 185, 223, ...>>)
+      :ok
+
+  """
+  @doc section: :session
   @spec delete_session(binary) :: :ok
   def delete_session(token) do
     Session.get_by_token_query(token)
@@ -311,7 +460,18 @@ defmodule Identity do
     :ok
   end
 
-  @doc "Revoke all sessions for the given `user`."
+  @doc """
+  Revoke all sessions for the given `user`.
+
+  Returns `:ok` regardless of whether any sessions were deleted.
+
+  ## Examples
+
+      iex> Identity.delete_sessions_by_user(user)
+      :ok
+
+  """
+  @doc section: :session
   @spec delete_sessions_by_user(User.t()) :: :ok
   def delete_sessions_by_user(user) do
     Session.list_by_user_query(user)

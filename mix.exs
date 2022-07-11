@@ -64,9 +64,13 @@ defmodule Identity.MixProject do
         "guides/progressive-replacement.md": [title: "Progressive Replacement"]
       ],
       groups_for_functions: [
-        "Password Login": &(&1[:section] == :session),
-        "Two Factor": &(&1[:section] == :mfa),
-        "Password Reset": &(&1[:section] == :password)
+        User: &(&1[:section] == :user),
+        Session: &(&1[:section] == :session),
+        "Two-Factor": &(&1[:section] == :mfa),
+        "Password Reset": &(&1[:section] == :password_reset)
+      ],
+      groups_for_modules: [
+        Schemas: [Identity.User, ~r/Identity.Schema/]
       ]
     ]
   end

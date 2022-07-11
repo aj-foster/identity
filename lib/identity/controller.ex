@@ -175,7 +175,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
 
     """
-    @doc section: :password
+    @doc section: :password_reset
     @spec new_password_token(Conn.t(), Conn.params()) :: Conn.t()
     def new_password_token(conn, _params) do
       render(conn, "new_password_token.html", error: nil)
@@ -200,7 +200,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     Regardless of outcome, redirects to `"/"` with a generic informational flash message to prevent
     account enumeration.
     """
-    @doc section: :password
+    @doc section: :password_reset
     @spec create_password_token(Conn.t(), Conn.params()) :: Conn.t()
     def create_password_token(conn, %{"password_token" => %{"email" => email}}) do
       if user = Identity.get_user_by_email(email) do
@@ -232,7 +232,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         `password` and `password_confirmation`.
 
     """
-    @doc section: :password
+    @doc section: :password_reset
     @spec new_password(Conn.t(), Conn.params()) :: Conn.t()
     def new_password(conn, _params) do
       user = conn.assigns[@assign_password_reset_user]
@@ -265,7 +265,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         `password` and `password_confirmation`.
 
     """
-    @doc section: :password
+    @doc section: :password_reset
     @spec update_password(Conn.t(), Conn.params()) :: Conn.t()
     def update_password(conn, %{"password" => password_params}) do
       user = conn.assigns[@assign_password_reset_user]
