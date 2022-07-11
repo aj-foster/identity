@@ -88,7 +88,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     # Two-Factor Authentication
     #
 
-    @doc "Render a 2FA form with no active error message."
+    @doc """
+    Render a 2FA form with no active error message.
+
+    This action provides a traditional, distinct 2FA page for password-based logins.
+
+    Renders `new_2fa.html` with assigns `error: nil` and `routes` with the endpoint's route
+    helper module.
+    """
     @doc section: :mfa
     @spec new_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def new_2fa(conn, _params) do
@@ -108,7 +115,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         }
 
     In the event of a login failure, the user will see `new_2fa.html` with an error message set
-    using the `:error` assign.
+    using the `:error` assign and `:routes` with the endpoint's route helper module.
     """
     @doc section: :mfa
     @spec validate_2fa(Conn.t(), Conn.params()) :: Conn.t()
@@ -129,6 +136,58 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           routes: routes
         )
       end
+    end
+
+    #
+    # Reset Password
+    #
+
+    @doc """
+    Render a password reset form with no active error message.
+
+    This action provides a traditional, distinct password reset form.
+
+    Renders `new_password_token.html` with assigns `error: nil` and `routes` with the endpoint's
+    route helper module.
+    """
+    @doc section: :password
+    @spec new_password_token(Conn.t(), Conn.params()) :: Conn.t()
+    def new_password_token(conn, _params) do
+      routes = :"#{router_module(conn)}.Helpers"
+      render(conn, "new_password_token.html", error: nil, routes: routes)
+    end
+
+    @doc """
+    Create and send a new password reset token for the user with the given `email`.
+
+    See `Identity.request_password_reset/1` for more information about
+
+    Incoming params should have the form:
+
+    %{
+      "password_token" => %{
+        "email" => email
+      }
+    }
+
+    In the event of an invalid submission, renders `new_password_token.html` with an error message
+    set using the `:error` assign and `:routes` with the endpoint's route helper module.
+
+    If successful, redirects to `"/"` with a generic error message to prevent account enumeration.
+    """
+    @doc section: :password
+    @spec create_password_token(Conn.t(), Conn.params()) :: Conn.t()
+    def create_password_token(conn, %{"password_token" => %{"email" => email}}) do
+      if user = Identity.get_user_by_email(email) do
+        Identity.request_password_reset(user)
+      end
+
+      put_flash(
+        conn,
+        :info,
+        "If your email is in our system, you will receive instructions to reset your password shortly."
+      )
+      |> redirect(to: "/")
     end
   end
 end

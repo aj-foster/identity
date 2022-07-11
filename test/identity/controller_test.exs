@@ -150,4 +150,32 @@ defmodule Identity.ControllerTest do
       refute conn.resp_cookies["_identity_user_remember_me"]
     end
   end
+
+  describe "new_password_token/2" do
+    test "renders the reset password page", %{conn: conn} do
+      conn = get(conn, "/password/new")
+      response = html_response(conn, 200)
+      assert response =~ "form action=\"/password/new\""
+    end
+  end
+
+  describe "create_password_token/2" do
+    test "sends a new reset password token", %{conn: conn, user: user} do
+      %{email: email} = Factory.insert(:email, user: user)
+      conn = post(conn, "/password/new", %{"password_token" => %{"email" => email}})
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :info) =~ "If your email is in our system"
+      assert Repo.get_by!(Identity.Schema.PasswordToken, user_id: user.id)
+    end
+
+    test "does not send reset password token if email is invalid", %{conn: conn} do
+      conn =
+        post(conn, "/password/new", %{"password_token" => %{"email" => "unknown@example.com"}})
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :info) =~ "If your email is in our system"
+      assert Repo.all(Identity.Schema.PasswordToken) == []
+    end
+  end
 end
