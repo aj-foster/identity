@@ -178,4 +178,68 @@ defmodule Identity.ControllerTest do
       assert Repo.all(Identity.Schema.PasswordToken) == []
     end
   end
+
+  describe "new_password/2" do
+    test "renders reset password", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user)
+      {:ok, %{token: token}} = Identity.request_password_reset(user)
+
+      conn = get(conn, "/password/#{token}")
+      assert html_response(conn, 200) =~ "form action=\"/password/#{token}\""
+    end
+
+    test "does not render reset password with invalid token", %{conn: conn} do
+      conn = get(conn, "/password/faketoken")
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "Reset password link is invalid or it has expired"
+    end
+  end
+
+  describe "update_password/2" do
+    setup %{user: user} do
+      {:ok, %{token: encoded_token}} = Identity.request_password_reset(user)
+      %{token: encoded_token}
+    end
+
+    test "resets password once", %{conn: conn, user: user, token: token} do
+      %{email: email} = Factory.insert(:email, user: user)
+      Factory.insert(:basic_login, user: user)
+
+      conn =
+        put(conn, "/password/#{token}", %{
+          "password" => %{
+            "password" => "new valid password",
+            "password_confirmation" => "new valid password"
+          }
+        })
+
+      assert redirected_to(conn) == "/session/new"
+      refute get_session(conn, :user_token)
+      assert get_flash(conn, :info) =~ "Password reset successfully"
+      assert Identity.get_user_by_email_and_password(email, "new valid password")
+    end
+
+    test "does not reset password on invalid data", %{conn: conn, user: user, token: token} do
+      Factory.insert(:basic_login, user: user)
+
+      conn =
+        put(conn, "/password/#{token}", %{
+          "password" => %{
+            "password" => "too short",
+            "password_confirmation" => "does not match"
+          }
+        })
+
+      response = html_response(conn, 200)
+      assert response =~ "form action=\"/password/#{token}\""
+      assert response =~ "should be at least 12 character(s)"
+      assert response =~ "does not match password"
+    end
+
+    test "does not reset password with invalid token", %{conn: conn} do
+      conn = put(conn, "/password/faketoken")
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "Reset password link is invalid or it has expired"
+    end
+  end
 end

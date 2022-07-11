@@ -30,6 +30,6 @@
 
   <div class="id_links">
     <%# link "Register", to: @routes.identity_path(@conn, :new_user) %> |
-    <%# link "Forgot your password?", to: @routes.identity_path(@conn, :reset_password) %>
+    <%= link "Forgot your password?", to: @routes.identity_path(@conn, :new_password_token) %>
   </div>
 </div>
