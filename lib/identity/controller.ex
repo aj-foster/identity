@@ -36,20 +36,27 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     This action provides a traditional, distinct login page for password-based logins. This action
     may not be necessary if all logins occur through another route, for example the app's home page.
 
-    Renders `new_session.html` with assigns `error: nil` and `routes` with the endpoint's route
-    helper module.
+    ## Incoming Params
+
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `new_session.html` with the following assigns:
+
+      * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
+
     """
     @doc section: :session
     @spec new_session(Conn.t(), Conn.params()) :: Conn.t()
     def new_session(conn, _params) do
-      routes = Module.concat(router_module(conn), Helpers)
-      render(conn, "new_session.html", error: nil, routes: routes)
+      render(conn, "new_session.html", error: nil)
     end
 
     @doc """
     Validate login details and either login or redirect to enter 2FA code.
 
-    Incoming params should have the form:
+    ## Incoming Params
 
         %{
           "session" => %{
@@ -59,19 +66,25 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           }
         }
 
-    In the event of a login failure, the user will see `new_session.html` with a generic error
-    message (set using the `:error` assign) to prevent account enumeration.
+    ## Error Response
+
+    In the event of a login failure, renders `new_session.html` with:
+
+      * `:error` (string or `nil`): Generic error message, which doesn't specify whether the email
+        or password is incorrect, to avoid account enumeration.
+
     """
     @doc section: :session
     @spec create_session(Conn.t(), Conn.params()) :: Conn.t()
     def create_session(conn, %{"session" => session_params}) do
       %{"email" => email, "password" => password} = session_params
       remember_me = session_params["remember_me"] == "true"
-      routes = Module.concat(router_module(conn), Helpers)
 
       if user = Identity.get_user_by_email_and_password(email, password) do
         # TODO: Can we preload the login on the user?
         if Identity.enabled_2fa?(user) do
+          routes = Module.concat(router_module(conn), Helpers)
+
           conn
           |> Identity.Plug.log_in_user(user, remember_me: false, pending: true)
           |> put_session(@session_remember_me_pending, remember_me)
@@ -82,8 +95,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
         end
       else
-        routes = Module.concat(router_module(conn), Helpers)
-        render(conn, "new_session.html", error: "Invalid e-mail or password", routes: routes)
+        render(conn, "new_session.html", error: "Invalid e-mail or password")
       end
     end
 
@@ -94,22 +106,27 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc """
     Render a 2FA form with no active error message.
 
-    This action provides a traditional, distinct 2FA page for password-based logins.
+    ## Incoming Params
 
-    Renders `new_2fa.html` with assigns `error: nil` and `routes` with the endpoint's route
-    helper module.
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `new_2fa.html` with the following assigns:
+
+      * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
+
     """
     @doc section: :mfa
     @spec new_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def new_2fa(conn, _params) do
-      routes = Module.concat(router_module(conn), Helpers)
-      render(conn, "new_2fa.html", error: nil, routes: routes)
+      render(conn, "new_2fa.html", error: nil)
     end
 
     @doc """
     Validate 2FA details and login the user.
 
-    Incoming params should have the form:
+    ## Incoming Params
 
         %{
           "session" => %{
@@ -117,8 +134,12 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           }
         }
 
-    In the event of a login failure, the user will see `new_2fa.html` with an error message set
-    using the `:error` assign and `:routes` with the endpoint's route helper module.
+    ## Error Response
+
+    In the event of a login failure, renders `new_2fa.html` with:
+
+      * `:error` (string or `nil`): Error message about the invalid code.
+
     """
     @doc section: :mfa
     @spec validate_2fa(Conn.t(), Conn.params()) :: Conn.t()
@@ -132,12 +153,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         |> put_flash(:info, "Successfully logged in")
         |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
       else
-        routes = Module.concat(router_module(conn), Helpers)
-
-        render(conn, "new_2fa.html",
-          error: "Invalid two-factor authentication code",
-          routes: routes
-        )
+        render(conn, "new_2fa.html", error: "Invalid two-factor authentication code")
       end
     end
 
@@ -148,32 +164,41 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc """
     Render a password reset request form with no active error message.
 
-    This action provides a traditional, distinct form for starting the password reset process.
+    ## Incoming Params
 
-    Renders `new_password_token.html` with assigns `error: nil` and `routes` with the endpoint's
-    route helper module.
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `new_password_token.html` with the following assigns:
+
+      * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
+
     """
     @doc section: :password
     @spec new_password_token(Conn.t(), Conn.params()) :: Conn.t()
     def new_password_token(conn, _params) do
-      routes = Module.concat(router_module(conn), Helpers)
-      render(conn, "new_password_token.html", error: nil, routes: routes)
+      render(conn, "new_password_token.html", error: nil)
     end
 
     @doc """
     Create and send a new password reset token for the user with the given `email`.
 
-    See `Identity.request_password_reset/1` for more information.
+    This action uses the `c:Identity.Notifier.reset_password/2` callback to notify the user of the
+    new token.
 
-    Incoming params should have the form:
+    ## Incoming Params
 
-    %{
-      "password_token" => %{
-        "email" => email
-      }
-    }
+        %{
+          "password_token" => %{
+            "email" => email
+          }
+        }
 
-    Regardless of outcome, redirects to `"/"` with a generic message to prevent account enumeration.
+    ## Response
+
+    Regardless of outcome, redirects to `"/"` with a generic informational flash message to prevent
+    account enumeration.
     """
     @doc section: :password
     @spec create_password_token(Conn.t(), Conn.params()) :: Conn.t()
@@ -191,47 +216,75 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     end
 
     @doc """
-    Render a password reset form with no active error message.
+    Render a password change form with no active error message.
 
-    This action provides a traditional, distinct form for completing the password reset process.
+    ## Incoming Params
 
-    TODO
-    Renders `new_password.html` with assigns `error: nil` and `routes` with the endpoint's route
-    helper module. The rendered form must resubmit the original password reset token.
+        %{
+          "token" => token  # Password reset token, generally included as a URL param
+        }
+
+    ## Render
+
+    Renders `new_password.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for changing the user's password. Expects fields
+        `password` and `password_confirmation`.
+
     """
     @doc section: :password
     @spec new_password(Conn.t(), Conn.params()) :: Conn.t()
     def new_password(conn, _params) do
-      routes = Module.concat(router_module(conn), Helpers)
       user = conn.assigns[@assign_password_reset_user]
-
-      render(conn, "new_password.html",
-        changeset: Identity.request_password_change(user),
-        routes: routes
-      )
+      render(conn, "new_password.html", changeset: Identity.request_password_change(user))
     end
 
     @doc """
-    Change the user's password using a password reset token.
+    Update the user's password using a password reset token.
+
+    ## Incoming Params
+
+        %{
+          "token" => token,  # Password reset token, generally included as a URL param
+          "password" => %{
+            "password" => password,
+            "password_confirmation" => password
+          }
+        }
+
+    ## Success Response
+
+    Redirects to the login route (`:new_session`) to avoid disclosing the email address if someone
+    has a leaked token.
+
+    ## Error Response
+
+    In the event of an update failure, renders `new_password.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for changing the user's password. Expects fields
+        `password` and `password_confirmation`.
+
     """
     @doc section: :password
     @spec update_password(Conn.t(), Conn.params()) :: Conn.t()
     def update_password(conn, %{"password" => password_params}) do
-      routes = Module.concat(router_module(conn), Helpers)
       user = conn.assigns[@assign_password_reset_user]
 
       case Identity.reset_password(user, password_params) do
         {:ok, _} ->
+          routes = Module.concat(router_module(conn), Helpers)
+
           conn
           |> put_flash(:info, "Password reset successfully.")
           |> redirect(to: routes.identity_path(conn, :new_session))
 
         {:error, changeset} ->
-          render(conn, "new_password.html", changeset: changeset, routes: routes)
+          render(conn, "new_password.html", changeset: changeset)
       end
     end
 
-    @spec get_user_by_password_token(Plug.Conn.t(), any) :: Plug.Conn.t()
+    # Helper plug for password reset actions.
+    @spec get_user_by_password_token(Conn.t(), any) :: Conn.t()
     defp get_user_by_password_token(conn, _opts) do
       %{"token" => token} = conn.params
 

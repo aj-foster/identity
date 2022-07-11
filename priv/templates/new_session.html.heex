@@ -1,7 +1,7 @@
 <div class="id_wrapper id_session_new">
   <h2>Log in</h2>
 
-  <.form let={f} for={@conn} action={@routes.identity_path(@conn, :create_session)} as={:session}>
+  <.form let={f} for={@conn} action={routes(@conn).identity_path(@conn, :create_session)} as={:session}>
     <%= if @error do %>
       <div class="alert alert-danger">
         <p><%= @error %></p>
@@ -30,6 +30,6 @@
 
   <div class="id_links">
     <%# link "Register", to: @routes.identity_path(@conn, :new_user) %> |
-    <%= link "Forgot your password?", to: @routes.identity_path(@conn, :new_password_token) %>
+    <%= link "Forgot your password?", to: routes(@conn).identity_path(@conn, :new_password_token) %>
   </div>
 </div>
