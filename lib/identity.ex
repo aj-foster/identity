@@ -347,6 +347,7 @@ defmodule Identity do
       nil
 
   """
+  @doc section: :email
   @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email) when is_binary(email) do
     Email.get_user_by_email_query(email)
@@ -364,6 +365,7 @@ defmodule Identity do
 
       iex> Identity.register_email(user, "person2@exaple.com")
       :ok
+
   """
   @doc section: :email
   @spec register_email(User.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t() | any}
@@ -378,7 +380,16 @@ defmodule Identity do
     end
   end
 
-  @doc "Confirm an email by its encoded `token`."
+  @doc """
+  Confirm an email by its encoded `token`.
+
+  ## Examples
+
+      iex> Identity.confirm_email("...")
+      %Email{}
+
+  """
+  @doc section: :email
   @spec confirm_email(String.t()) :: {:ok, Email.t()} | {:error, :invalid | :not_found}
   def confirm_email(token) do
     with {:ok, query} <- Email.confirm_email_query(token),
@@ -390,7 +401,21 @@ defmodule Identity do
     end
   end
 
-  @doc "Remove a registered email, unless it is the only confirmed email for a user."
+  @doc """
+  Remove a registered email, unless it is the only confirmed email for a user.
+
+  If no emails are confirmed for this user, the only restriction enforced is that the user cannot
+  delete their last remaining email address. Possible results are `:ok` when an email address is
+  successfully removed, `{:error, :not_found}` if no such email exists for the given user, and
+  `{:error, :only_email}` if deletion was restricted by the cases mentioned above.
+
+  ## Examples
+
+      iex> Identity.remove_email(user, "person@example.com")
+      :ok
+
+  """
+  @doc section: :email
   @spec remove_email(User.t(), String.t()) :: :ok | {:error, :only_email | :not_found}
   def remove_email(user, email) do
     Email.list_emails_by_user_query(user.id)
