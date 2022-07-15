@@ -366,11 +366,16 @@ defmodule Identity do
       :ok
   """
   @doc section: :email
+  @spec register_email(User.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t() | any}
   def register_email(user, email) do
-    %Email{}
-    |> Email.registration_changeset(%{email: email})
-    |> Ecto.Changeset.put_assoc(:user, user)
-    |> repo().insert()
+    changeset =
+      %Email{}
+      |> Email.registration_changeset(%{email: email})
+      |> Ecto.Changeset.put_assoc(:user, user)
+
+    with {:ok, %Email{token: encoded_token}} <- repo().insert(changeset) do
+      notifier().confirm_email(user, encoded_token)
+    end
   end
 
   @doc "Confirm an email by its encoded `token`."
@@ -429,16 +434,16 @@ defmodule Identity do
 
   """
   @doc section: :password_reset
+  @spec request_password_reset(User.t()) :: :ok | {:error, any}
   def request_password_reset(%User{} = user) do
     %PasswordToken{token: encoded_token} =
-      token =
       PasswordToken.initiate_reset_changeset()
       |> Ecto.Changeset.put_assoc(:user, user)
       |> repo().insert!()
 
-    with :ok <- notifier().reset_password(user, encoded_token) do
-      {:ok, token}
-    end
+    notifier().reset_password(user, encoded_token)
+  end
+
   @doc """
   Get a user based on an encoded password reset `token`.
 

@@ -441,6 +441,14 @@ defmodule IdentityTest do
       {:error, changeset} = Identity.register_email(user, String.upcase(email))
       assert "has already been taken" in errors_on(changeset).email
     end
+
+    test "sends token through notification", %{user: user} do
+      assert :ok = Identity.register_email(user, "person@example.com")
+      assert_received {:confirm_email, ^user, token}
+      assert {:ok, token} = Base.url_decode64(token, padding: false)
+      assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
+      assert user_token.user_id == user.id
+    end
   end
 
   describe "confirm_email/1" do
@@ -499,8 +507,9 @@ defmodule IdentityTest do
     end
 
     test "sends token through notification", %{user: user} do
-      {:ok, %PasswordToken{token: token}} = Identity.request_password_reset(user)
-      {:ok, token} = Base.url_decode64(token, padding: false)
+      assert :ok = Identity.request_password_reset(user)
+      assert_received {:reset_password, ^user, token}
+      assert {:ok, token} = Base.url_decode64(token, padding: false)
       assert user_token = Repo.get_by(PasswordToken, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
     end

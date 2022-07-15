@@ -182,7 +182,8 @@ defmodule Identity.ControllerTest do
   describe "new_password/2" do
     test "renders reset password", %{conn: conn, user: user} do
       Factory.insert(:basic_login, user: user)
-      {:ok, %{token: token}} = Identity.request_password_reset(user)
+      :ok = Identity.request_password_reset(user)
+      assert_received {:reset_password, ^user, token}
 
       conn = get(conn, "/password/#{token}")
       assert html_response(conn, 200) =~ "form action=\"/password/#{token}\""
@@ -197,7 +198,8 @@ defmodule Identity.ControllerTest do
 
   describe "update_password/2" do
     setup %{user: user} do
-      {:ok, %{token: encoded_token}} = Identity.request_password_reset(user)
+      :ok = Identity.request_password_reset(user)
+      assert_received {:reset_password, ^user, encoded_token}
       %{token: encoded_token}
     end
 

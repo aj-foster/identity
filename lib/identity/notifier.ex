@@ -17,6 +17,8 @@ defmodule Identity.Notifier do
           # For example...
           MyApp.Mailer.send_password_reset(user, token)
         end
+
+        # ...
       end
 
   Callbacks should return `:ok` or `{:error, reason}`. In general, error responses will be
@@ -40,14 +42,27 @@ defmodule Identity.Notifier do
     quote do
       @behaviour Identity.Notifier
 
-      def reset_password(user, token) do
+      def confirm_email(user, _token) do
+        require Logger
+        Logger.info("[Identity] Email confirmation initiated for user #{user.id}")
+      end
+
+      def reset_password(user, _token) do
         require Logger
         Logger.info("[Identity] Password reset initiated for user #{user.id}")
       end
 
+      defoverridable confirm_email: 2
       defoverridable reset_password: 2
     end
   end
+
+  @doc """
+  Send an email confirmation `token` and instructions to the given `user`.
+
+  The token passed to this callback is already encoded to be human-readable and URL-safe.
+  """
+  @callback confirm_email(user :: User.t(), token :: String.t()) :: :ok | {:error, any}
 
   @doc """
   Send a password reset `token` and instructions to the given `user`.
