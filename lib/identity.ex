@@ -112,23 +112,25 @@ defmodule Identity do
   """
   @doc section: :login
   @spec register_login(%User{}, %{email: String.t(), password: String.t()}) ::
-          {:ok, %{email: Email.t(), login: BasicLogin.t()}}
-          | {:error, atom, Ecto.Changeset.t(), map}
+          {:ok, User.t()} | {:error, atom, Ecto.Changeset.t(), map}
   def register_login(user \\ %User{}, attrs) do
     email_changeset =
       %Email{}
       |> Email.registration_changeset(attrs)
       |> Ecto.Changeset.put_assoc(:user, user)
 
-    login_changeset =
-      %BasicLogin{}
-      |> BasicLogin.registration_changeset(attrs)
-      |> Ecto.Changeset.put_assoc(:user, user)
-
     Ecto.Multi.new()
     |> Ecto.Multi.insert(:email, email_changeset)
-    |> Ecto.Multi.insert(:login, login_changeset)
+    |> Ecto.Multi.insert(:login, fn %{email: email} ->
+      %BasicLogin{}
+      |> BasicLogin.registration_changeset(attrs)
+      |> Ecto.Changeset.put_assoc(:user, email.user)
+    end)
     |> repo().transaction()
+    |> case do
+      {:ok, %{email: email}} -> {:ok, email.user}
+      error -> error
+    end
   end
 
   @doc """

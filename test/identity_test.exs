@@ -130,27 +130,30 @@ defmodule IdentityTest do
     end
 
     test "registers users with a hashed password", %{email: email, password: password} do
-      {:ok, %{email: email_struct, login: login}} =
-        Identity.register_login(%{email: email, password: password})
+      assert {:ok, _user} = Identity.register_login(%{email: email, password: password})
 
+      assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert email_struct.email == email
       assert is_nil(email_struct.confirmed_at)
       assert is_struct(email_struct.user, User)
 
+      assert [login] = preload(BasicLogin, :user) |> Repo.all()
       assert is_binary(login.hashed_password)
       assert is_nil(login.password)
       assert is_struct(login.user, User)
+
+      assert email_struct.user.id == login.user.id
     end
 
     test "associates an existing user", %{email: email, password: password} do
       user = Factory.insert(:user)
+      assert {:ok, _user} = Identity.register_login(user, %{email: email, password: password})
 
-      {:ok, %{email: email_struct, login: login}} =
-        Identity.register_login(user, %{email: email, password: password})
-
+      assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert is_struct(email_struct.user, User)
       assert email_struct.user.id == user.id
 
+      assert [login] = preload(BasicLogin, :user) |> Repo.all()
       assert is_struct(login.user, User)
       assert login.user.id == user.id
     end
