@@ -78,7 +78,19 @@ defmodule Identity do
   # Basic Logins
   #
 
-  @doc "Get the user associated with a given `email` if the `password` matches."
+  @doc """
+  Get the user associated with a given `email` if the `password` matches.
+
+  ## Examples
+
+      iex> Identity.get_user_by_email_and_password("person@example.com", "password123")
+      %User{id: "b8bca997-0fcf-4997-ad00-ed96ae1e0b1a"}
+
+      iex> Identity.get_user_by_email_and_password("person@example.com", "invalid123")
+      nil
+
+  """
+  @doc section: :login
   @spec get_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
@@ -86,7 +98,19 @@ defmodule Identity do
     if BasicLogin.valid_password?(login, password), do: login.user
   end
 
-  @doc "Create a basic login and unconfirmed email for the given `user` or a brand new user."
+  @doc """
+  Create a basic login and unconfirmed email for the given `user` or a brand new user.
+
+  Use this function with an existing user to add email/password login if they currently log in with
+  another method. Omit the user argument if someone registers for a new account.
+
+  ## Examples
+
+      iex> Identity.register_login(%{email: "person@example.com", password: "password123"})
+      {:ok, %{email: %Identity.Schema.Email{}, login: %Identity.Schema.BasicLogin{}}}
+
+  """
+  @doc section: :login
   @spec register_login(%User{}, %{email: String.t(), password: String.t()}) ::
           {:ok, %{email: Email.t(), login: BasicLogin.t()}}
           | {:error, atom, Ecto.Changeset.t(), map}
@@ -107,14 +131,32 @@ defmodule Identity do
     |> repo().transaction()
   end
 
-  @doc "Create a changeset for changing the user's password."
+  @doc """
+  Create a changeset for changing the user's password.
+
+  ## Examples
+
+      iex> Identity.request_password_change(user)
+      %Ecto.Changeset{...}
+
+  """
+  @doc section: :login
   @spec request_password_change(User.t(), map) :: Ecto.Changeset.t()
   def request_password_change(%User{} = user, attrs \\ %{}) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
     BasicLogin.password_changeset(basic_login, attrs, hash_password: false)
   end
 
-  @doc "Update the password for the given `user` and remove all active sessions and tokens."
+  @doc """
+  Update the password for the given `user` and remove all active sessions and tokens.
+
+  ## Examples
+
+      iex> Identity.change_password(user, "password123", %{"password" => "newpass", "password_confirmation" => "newpass"})
+      :ok
+
+  """
+  @doc section: :login
   @spec change_password(User.t(), String.t(), map) :: :ok | {:error, Ecto.Changeset.t()}
   def change_password(%User{} = user, current_password, attrs \\ %{}) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
@@ -293,15 +335,37 @@ defmodule Identity do
   # Emails
   #
 
-  @doc "Get the user associated with a given `email` address."
+  @doc """
+  Get the user associated with a given `email` address.
+
+  ## Examples
+
+      iex> Identity.get_user_by_email("person@example.com")
+      %User{}
+
+      iex> Identity.get_user_by_email("unknown@example.com")
+      nil
+
+  """
   @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email) when is_binary(email) do
     Email.get_user_by_email_query(email)
     |> repo().one()
   end
 
-  @doc "Create an unconfirmed email for the given `user`."
-  @spec register_email(User.t(), String.t()) :: {:ok, Email.t()} | {:error, Ecto.Changeset.t()}
+  @doc """
+  Create an unconfirmed email for the given `user`.
+
+  This function inserts a new email address record associated with the given user. If desired,
+  confirmation of the email can be required using the notifier and `confirm_email/1`. See
+  `c:Identity.Notifier.confirm_email/2`.
+
+  ## Examples
+
+      iex> Identity.register_email(user, "person2@exaple.com")
+      :ok
+  """
+  @doc section: :email
   def register_email(user, email) do
     %Email{}
     |> Email.registration_changeset(%{email: email})
@@ -350,7 +414,21 @@ defmodule Identity do
   # Passwords
   #
 
-  @spec request_password_reset(User.t()) :: {:ok, PasswordToken.t()}
+  @doc """
+  Create a password reset token and notify the user.
+
+  This is the first step in the password reset process. Once the user receives the reset token,
+  identify / authenticate them with `get_user_by_password_token/1` and complete the process using
+  `reset_password/2`. See `c:Identity.Notifier.reset_password/2` for more information about the
+  user notification.
+
+  ## Examples
+
+      iex> Identity.request_password_reset(user)
+      :ok
+
+  """
+  @doc section: :password_reset
   def request_password_reset(%User{} = user) do
     %PasswordToken{token: encoded_token} =
       token =
@@ -361,9 +439,16 @@ defmodule Identity do
     with :ok <- notifier().reset_password(user, encoded_token) do
       {:ok, token}
     end
-  end
+  @doc """
+  Get a user based on an encoded password reset `token`.
 
-  @doc "Get a user based on an encoded password reset `token`."
+  ## Examples
+
+      iex> Identity.get_user_by_password_token("...")
+      %User{}
+
+  """
+  @doc section: :password_reset
   @spec get_user_by_password_token(String.t()) :: User.t() | nil
   def get_user_by_password_token(token) do
     with {:ok, query} <- PasswordToken.get_user_by_token_query(token),
@@ -374,7 +459,20 @@ defmodule Identity do
     end
   end
 
-  @doc "Reset a user's password."
+  @doc """
+  Reset a user's password.
+
+  Assumes the user has already been identified and authenticated using a password reset token
+  (see `get_user_by_password_token/1`). This final step ensures the new password is valid before
+  saving.
+
+  ## Examples
+
+      iex> Identity.reset_password(user, %{"password" => "newpassword", "password_confirmation" => "newpassword})
+      {:ok, %User{}}
+
+  """
+  @doc section: :password_reset
   @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Changeset.t()}
   def reset_password(user, attrs) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()

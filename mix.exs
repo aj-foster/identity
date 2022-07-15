@@ -65,6 +65,8 @@ defmodule Identity.MixProject do
       ],
       groups_for_functions: [
         User: &(&1[:section] == :user),
+        Login: &(&1[:section] == :login),
+        Email: &(&1[:section] == :email),
         Session: &(&1[:section] == :session),
         "Two-Factor": &(&1[:section] == :mfa),
         "Password Reset": &(&1[:section] == :password_reset)
