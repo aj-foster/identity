@@ -16,6 +16,7 @@ if Code.ensure_loaded?(Phoenix.Router) do
 
       get "/email/new", Identity.Controller, :new_email, as: :identity
       post "/email/new", Identity.Controller, :create_email, as: :identity
+      get "/email/:token", Identity.Controller, :confirm_email, as: :identity
     end
   end
 end

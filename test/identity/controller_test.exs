@@ -295,4 +295,25 @@ defmodule Identity.ControllerTest do
       assert response =~ "must have the @ sign"
     end
   end
+
+  describe "confirm_email/2" do
+    setup %{user: user} do
+      Identity.register_email(user, "new@example.com")
+      assert_received {:confirm_email, ^user, encoded_token}
+      %{token: encoded_token}
+    end
+
+    test "confirms email address", %{conn: conn, token: token} do
+      conn = get(conn, "/email/#{token}")
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :info) =~ "confirmed"
+      assert Repo.get_by(Identity.Schema.Email, email: "new@example.com").confirmed_at
+    end
+
+    test "does not confirm email with invalid token", %{conn: conn} do
+      conn = get(conn, "/email/faketoken")
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "Email confirmation link is invalid or it has expired"
+    end
+  end
 end

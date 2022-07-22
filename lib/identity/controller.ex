@@ -25,7 +25,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
          when action in [:new_session, :create_session, :new_2fa, :validate_2fa]
 
     plug :require_pending_login when action in [:new_2fa, :validate_2fa]
-    plug :require_authenticated_user when action in [:new_email, :create_email]
+    plug :require_authenticated_user when action in [:new_email, :create_email, :confirm_email]
 
     #
     # Password Login
@@ -367,6 +367,39 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         {:error, changeset} ->
           render(conn, "new_email.html", changeset: changeset)
+      end
+    end
+
+    @doc """
+    Verify a newly registered email address using an email confirmation token.
+
+    ## Incoming Params
+
+        %{
+          "token" => token  # Email confirmation token, generally included as a URL param
+        }
+
+    ## Success Response
+
+    Redirects to `"/"` with an informational flash message.
+
+    ## Error Response
+
+    In the event of an invalid token, redirects to `"/"` with an informational flash message.
+    """
+    @doc section: :email
+    @spec confirm_email(Conn.t(), Conn.params()) :: Conn.t()
+    def confirm_email(conn, %{"token" => token}) do
+      case Identity.confirm_email(token) do
+        {:ok, _email} ->
+          conn
+          |> put_flash(:info, "Email address confirmed")
+          |> redirect(to: "/")
+
+        {:error, _reason} ->
+          conn
+          |> put_flash(:error, "Email confirmation link is invalid or it has expired")
+          |> redirect(to: "/")
       end
     end
   end
