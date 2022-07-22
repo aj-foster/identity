@@ -99,6 +99,24 @@ defmodule Identity do
   end
 
   @doc """
+  Validate whether `password` matches the given `user`, such as when a user is making changes to
+  their email addresses.
+
+  ## Examples
+
+      iex> Identity.validate_password(user, "password")
+      true
+
+  """
+  @doc section: :login
+  @spec valid_password?(User.t(), String.t()) :: boolean
+  def valid_password?(%User{} = user, password) when is_binary(password) do
+    BasicLogin.get_login_by_user_query(user)
+    |> repo().one()
+    |> BasicLogin.valid_password?(password)
+  end
+
+  @doc """
   Create a basic login and unconfirmed email for the given `user` or a brand new user.
 
   Use this function with an existing user to add email/password login if they currently log in with

@@ -74,6 +74,23 @@ defmodule IdentityTest do
     end
   end
 
+  describe "validate_password/2" do
+    setup do
+      user = Factory.insert(:user)
+      password = Factory.valid_user_password()
+      Factory.insert(:basic_login, password: password, user: user)
+      %{user: user, password: password}
+    end
+
+    test "returns true for a correct password", %{password: password, user: user} do
+      assert Identity.valid_password?(user, password)
+    end
+
+    test "returns false for an incorrect password", %{user: user} do
+      refute Identity.valid_password?(user, "wrong")
+    end
+  end
+
   describe "register_login/2" do
     setup do
       %{
