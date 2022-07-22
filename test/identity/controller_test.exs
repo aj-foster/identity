@@ -244,4 +244,55 @@ defmodule Identity.ControllerTest do
       assert get_flash(conn, :error) =~ "Reset password link is invalid or it has expired"
     end
   end
+
+  describe "new_email/2" do
+    test "renders the new email page", %{conn: conn, user: user} do
+      conn = Identity.Plug.log_in_user(conn, user)
+      conn = get(conn, "/email/new")
+      response = html_response(conn, 200)
+      assert response =~ "form action=\"/email/new\""
+    end
+
+    test "redirects if user is not logged in", %{conn: conn} do
+      conn = get(conn, "/email/new")
+      assert redirected_to(conn) == "/"
+    end
+  end
+
+  describe "create_email/2" do
+    setup %{user: user} do
+      password = Factory.valid_user_password()
+      Factory.insert(:basic_login, password: password, user: user)
+
+      %{password: password}
+    end
+
+    test "adds a new email address", %{conn: conn, password: password, user: user} do
+      params = %{"email" => %{"email" => "new@example.com", "password" => password}}
+      conn = Identity.Plug.log_in_user(conn, user)
+      conn = post(conn, "/email/new", params)
+
+      assert redirected_to(conn) == "/email/new"
+      assert get_flash(conn, :info) =~ "A link to confirm"
+      assert Identity.get_user_by_email("new@example.com")
+    end
+
+    test "does not update email on invalid password", %{conn: conn, user: user} do
+      params = %{"email" => %{"email" => "new@example.com", "password" => "wrong"}}
+      conn = Identity.Plug.log_in_user(conn, user)
+      conn = post(conn, "/email/new", params)
+
+      response = html_response(conn, 200)
+      assert response =~ "is invalid"
+    end
+
+    test "does not update email on invalid email", %{conn: conn, password: password, user: user} do
+      params = %{"email" => %{"email" => "invalid", "password" => password}}
+      conn = Identity.Plug.log_in_user(conn, user)
+      conn = post(conn, "/email/new", params)
+
+      response = html_response(conn, 200)
+      assert response =~ "must have the @ sign"
+    end
+  end
 end

@@ -18,13 +18,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     plug :fetch_flash
     plug :put_new_view, Identity.Phoenix.View
 
+    plug :fetch_current_user
+    plug :get_user_by_password_token when action in [:new_password, :update_password]
+
     plug :redirect_if_user_is_authenticated
          when action in [:new_session, :create_session, :new_2fa, :validate_2fa]
 
     plug :require_pending_login when action in [:new_2fa, :validate_2fa]
-    plug :fetch_current_user when action in [:validate_2fa]
-
-    plug :get_user_by_password_token when action in [:new_password, :update_password]
+    plug :require_authenticated_user when action in [:new_email, :create_email]
 
     #
     # Password Login
@@ -297,6 +298,75 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         |> put_flash(:error, "Reset password link is invalid or it has expired.")
         |> redirect(to: "/")
         |> halt()
+      end
+    end
+
+    #
+    # Email Addresses
+    #
+
+    @doc """
+    Render a form to add an additional email address to an existing user.
+
+    ## Incoming Params
+
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `new_email.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for adding a new email address. Expects fields
+        `email` and `password` (for verification).
+
+    """
+    @doc section: :email
+    @spec new_email(Conn.t(), any) :: Conn.t()
+    def new_email(conn, _params) do
+      render(conn, "new_email.html", changeset: Identity.request_register_email())
+    end
+
+    @doc """
+    Create a new email address for the current user and send a confirmation notification.
+
+    ## Incoming Params
+
+        %{
+          "email" => %{
+            "email" => email,
+            "password" => password  # For verification
+          }
+        }
+
+    ## Success Response
+
+    Redirects to the new email route with a flash message informing the user to check their email
+    for a confirmation link.
+
+    ## Error Response
+
+    In the event of an incorrect password or update failure, renders `new_email.html` with the
+    following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for adding a new email address. Expects fields
+        `email` and `password` (for verification).
+
+    """
+    @doc section: :email
+    @spec create_email(Conn.t(), Conn.params()) :: Conn.t()
+    def create_email(conn, %{"email" => %{"email" => email, "password" => password}}) do
+      user = conn.assigns[:current_user]
+
+      case Identity.register_email(user, email, password) do
+        :ok ->
+          routes = Module.concat(router_module(conn), Helpers)
+
+          conn
+          |> put_flash(:info, "A link to confirm your email has been sent to the new address.")
+          |> redirect(to: routes.identity_path(conn, :new_email))
+
+        {:error, changeset} ->
+          render(conn, "new_email.html", changeset: changeset)
       end
     end
   end
