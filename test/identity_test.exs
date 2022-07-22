@@ -431,6 +431,12 @@ defmodule IdentityTest do
     end
   end
 
+  describe "request_register_email/0" do
+    test "returns a changeset" do
+      assert %Ecto.Changeset{errors: []} = Identity.request_register_email()
+    end
+  end
+
   describe "register_email/2" do
     setup do
       %{user: Factory.insert(:user)}
@@ -468,6 +474,23 @@ defmodule IdentityTest do
       assert {:ok, token} = Base.url_decode64(token, padding: false)
       assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
+    end
+  end
+
+  describe "register_email/3" do
+    setup do
+      user = Factory.insert(:user)
+      password = Factory.valid_user_password()
+      Factory.insert(:basic_login, password: password, user: user)
+
+      %{password: password, user: user}
+    end
+
+    test "validates a user's password", %{password: password, user: user} do
+      assert {:error, changeset} = Identity.register_email(user, "person@example.com", "wrong")
+      assert "is invalid" in errors_on(changeset).password
+
+      assert :ok = Identity.register_email(user, "person@example.com", password)
     end
   end
 

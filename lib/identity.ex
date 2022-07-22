@@ -375,11 +375,28 @@ defmodule Identity do
   end
 
   @doc """
+  Create a changeset for adding a new email address to an existing user.
+
+  ## Examples
+
+      iex> Identity.request_register_email()
+      #Ecto.Changeset<...>
+
+  """
+  @doc section: :email
+  @spec request_register_email :: Ecto.Changeset.t()
+  def request_register_email do
+    Ecto.Changeset.change(%Email{})
+  end
+
+  @doc """
   Create an unconfirmed email for the given `user`.
 
   This function inserts a new email address record associated with the given user. If desired,
   confirmation of the email can be required using the notifier and `confirm_email/1`. See
   `c:Identity.Notifier.confirm_email/2`.
+
+  See also `register_email/3` for a variation that requires a password.
 
   ## Examples
 
@@ -397,6 +414,34 @@ defmodule Identity do
 
     with {:ok, %Email{token: encoded_token}} <- repo().insert(changeset) do
       notifier().confirm_email(user, encoded_token)
+    end
+  end
+
+  @doc """
+  Create an unconfirmed email for the given `user` after verifying the `password`.
+
+  This function inserts a new email address record associated with the given user. If desired,
+  confirmation of the email can be required using the notifier and `confirm_email/1`. See
+  `c:Identity.Notifier.confirm_email/2`.
+
+  See also `register_email/2` for a variation that does not require a password.
+
+  ## Examples
+
+      iex> Identity.register_email(user, "person2@exaple.com", "password")
+      :ok
+
+  """
+  @doc section: :email
+  @spec register_email(User.t(), String.t(), String.t()) ::
+          :ok | {:error, Ecto.Changeset.t() | any}
+  def register_email(user, email, password) do
+    if valid_password?(user, password) do
+      register_email(user, email)
+    else
+      request_register_email()
+      |> Ecto.Changeset.add_error(:password, "is invalid")
+      |> Ecto.Changeset.apply_action(:insert)
     end
   end
 
