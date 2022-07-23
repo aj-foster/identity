@@ -478,6 +478,46 @@ defmodule IdentityTest do
     end
   end
 
+  describe "register_email/2" do
+    setup do
+      %{user: Factory.insert(:user)}
+    end
+
+    test "requires email to be set", %{user: user} do
+      {:error, changeset} = Identity.register_email(user, "")
+      assert %{email: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "validates email when given", %{user: user} do
+      {:error, changeset} = Identity.register_email(user, "not valid")
+      assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
+    end
+
+    test "validates maximum values for email for security", %{user: user} do
+      too_long = String.duplicate("db", 100)
+      {:error, changeset} = Identity.register_email(user, too_long)
+      assert "should be at most 160 character(s)" in errors_on(changeset).email
+    end
+
+    test "validates email uniqueness", %{user: user} do
+      %{email: email} = Factory.insert(:email)
+      {:error, changeset} = Identity.register_email(user, email)
+      assert "has already been taken" in errors_on(changeset).email
+
+      # Now try with the upper cased email too, to check that email case is ignored.
+      {:error, changeset} = Identity.register_email(user, String.upcase(email))
+      assert "has already been taken" in errors_on(changeset).email
+    end
+
+    test "sends token through notification", %{user: user} do
+      assert :ok = Identity.register_email(user, "person@example.com")
+      assert_received {:confirm_email, ^user, token}
+      assert {:ok, token} = Base.url_decode64(token, padding: false)
+      assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
+      assert user_token.user_id == user.id
+    end
+  end
+
   describe "register_email/3" do
     setup do
       user = Factory.insert(:user)
@@ -485,40 +525,6 @@ defmodule IdentityTest do
       Factory.insert(:basic_login, password: password, user: user)
 
       %{password: password, user: user}
-    end
-
-    test "requires email to be set", %{password: password, user: user} do
-      {:error, changeset} = Identity.register_email(user, "", password)
-      assert %{email: ["can't be blank"]} = errors_on(changeset)
-    end
-
-    test "validates email when given", %{password: password, user: user} do
-      {:error, changeset} = Identity.register_email(user, "not valid", password)
-      assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
-    end
-
-    test "validates maximum values for email for security", %{password: password, user: user} do
-      too_long = String.duplicate("db", 100)
-      {:error, changeset} = Identity.register_email(user, too_long, password)
-      assert "should be at most 160 character(s)" in errors_on(changeset).email
-    end
-
-    test "validates email uniqueness", %{password: password, user: user} do
-      %{email: email} = Factory.insert(:email)
-      {:error, changeset} = Identity.register_email(user, email, password)
-      assert "has already been taken" in errors_on(changeset).email
-
-      # Now try with the upper cased email too, to check that email case is ignored.
-      {:error, changeset} = Identity.register_email(user, String.upcase(email), password)
-      assert "has already been taken" in errors_on(changeset).email
-    end
-
-    test "sends token through notification", %{password: password, user: user} do
-      assert :ok = Identity.register_email(user, "person@example.com", password)
-      assert_received {:confirm_email, ^user, token}
-      assert {:ok, token} = Base.url_decode64(token, padding: false)
-      assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
-      assert user_token.user_id == user.id
     end
 
     test "validates a user's password", %{password: password, user: user} do
