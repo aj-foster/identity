@@ -297,10 +297,12 @@ defmodule Identity.ControllerTest do
   end
 
   describe "confirm_email/2" do
-    setup %{user: user} do
+    setup %{conn: conn, user: user} do
       Identity.register_email(user, "new@example.com")
       assert_received {:confirm_email, ^user, encoded_token}
-      %{token: encoded_token}
+
+      conn = Identity.Plug.log_in_user(conn, user)
+      %{conn: conn, token: encoded_token}
     end
 
     test "confirms email address", %{conn: conn, token: token} do
