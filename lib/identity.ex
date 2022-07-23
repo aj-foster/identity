@@ -124,14 +124,14 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.register_login(%{email: "person@example.com", password: "password123"})
-      {:ok, %{email: %Identity.Schema.Email{}, login: %Identity.Schema.BasicLogin{}}}
+      iex> Identity.register_email_and_password(%{email: "person@example.com", password: "password123"})
+      {:ok, %User{}}
 
   """
   @doc section: :login
-  @spec register_login(%User{}, %{email: String.t(), password: String.t()}) ::
+  @spec register_email_and_password(%User{}, %{email: String.t(), password: String.t()}) ::
           {:ok, User.t()} | {:error, atom, Ecto.Changeset.t(), map}
-  def register_login(user \\ %User{}, attrs) do
+  def register_email_and_password(user \\ %User{}, attrs) do
     email_changeset =
       %Email{}
       |> Email.registration_changeset(attrs)
@@ -146,8 +146,12 @@ defmodule Identity do
     end)
     |> repo().transaction()
     |> case do
-      {:ok, %{email: email}} -> {:ok, email.user}
-      error -> error
+      {:ok, %{email: %Email{token: encoded_token, user: user}}} ->
+        notifier().confirm_email(user, encoded_token)
+        {:ok, user}
+
+      error ->
+        error
     end
   end
 
