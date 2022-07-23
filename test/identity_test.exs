@@ -181,6 +181,42 @@ defmodule IdentityTest do
     end
   end
 
+  describe "register_password/2" do
+    setup do
+      %{
+        password: Factory.valid_user_password(),
+        user: Factory.insert(:user)
+      }
+    end
+
+    test "requires password to be set", %{user: user} do
+      {:error, changeset} = Identity.register_password(user, "")
+      assert %{password: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "validates password when given", %{user: user} do
+      {:error, changeset} = Identity.register_password(user, "not valid")
+      assert %{password: ["should be at least 12 character(s)"]} = errors_on(changeset)
+    end
+
+    test "validates maximum value for password for security", %{user: user} do
+      too_long = String.duplicate("db", 100)
+      {:error, changeset} = Identity.register_password(user, too_long)
+      assert "should be at most 80 character(s)" in errors_on(changeset).password
+    end
+
+    test "registers users with a hashed password", %{password: password, user: user} do
+      assert {:ok, _user} = Identity.register_password(user, password)
+
+      assert [login] = preload(BasicLogin, :user) |> Repo.all()
+      assert is_binary(login.hashed_password)
+      assert is_nil(login.password)
+      assert is_struct(login.user, User)
+
+      assert user.id == login.user.id
+    end
+  end
+
   describe "request_password_change/2" do
     setup do
       user = Factory.insert(:user)

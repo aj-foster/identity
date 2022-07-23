@@ -120,7 +120,9 @@ defmodule Identity do
   Create a basic login and unconfirmed email for the given `user` or a brand new user.
 
   Use this function with an existing user to add email/password login if they currently log in with
-  another method. Omit the user argument if someone registers for a new account.
+  another method. Omit the user argument if someone registers for a new account. If desired,
+  confirmation of the email can be required using the notifier and `confirm_email/1`. See
+  `c:Identity.Notifier.confirm_email/2`.
 
   ## Examples
 
@@ -156,6 +158,27 @@ defmodule Identity do
   end
 
   @doc """
+  Create a basic login for the given `user`.
+
+  Use this function with an existing user to add email/password login if they currently log in with
+  another method. If registering a brand new user, use `register_email_and_password/2` instead.
+
+  ## Examples
+
+      iex> Identity.register_password(user, password)
+      {:ok, %User{}}
+
+  """
+  @doc section: :login
+  @spec register_password(User.t(), String.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def register_password(user, password) do
+    %BasicLogin{}
+    |> BasicLogin.registration_changeset(%{password: password})
+    |> Ecto.Changeset.put_assoc(:user, user)
+    |> repo().insert()
+  end
+
+  @doc """
   Create a changeset for changing the user's password.
 
   ## Examples
@@ -176,7 +199,7 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.change_password(user, "password123", %{"password" => "newpass", "password_confirmation" => "newpass"})
+      iex> Identity.change_password(user, "password123", %{"password" => "new_password", "password_confirmation" => "new_password"})
       :ok
 
   """
@@ -544,7 +567,7 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.reset_password(user, %{"password" => "newpassword", "password_confirmation" => "newpassword})
+      iex> Identity.reset_password(user, %{"password" => "new_password", "password_confirmation" => "new_password})
       {:ok, %User{}}
 
   """
