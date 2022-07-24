@@ -155,7 +155,7 @@ defmodule Identity do
 
   """
   @doc section: :login
-  @spec create_email_and_login(%User{}, %{email: String.t(), password: String.t()}) ::
+  @spec create_email_and_login(%User{}, map) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t(Changeset.email_password_data())}
   def create_email_and_login(user \\ %User{}, attrs) do
     changeset = Changeset.email_and_password(attrs)

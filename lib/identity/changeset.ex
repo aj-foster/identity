@@ -22,7 +22,7 @@ defmodule Identity.Changeset do
   alias Identity.Schema.Email
 
   @typedoc "Dataset with email and password fields, as during registration."
-  @type email_password_data :: %{:email => String.t(), optional(any) => any}
+  @type email_password_data :: %{:email => String.t(), :password => String.t()}
 
   @doc """
   Changeset for inserting a new `Identity.Schema.Email` and `Identity.Schema.BasicLogin` at once.
