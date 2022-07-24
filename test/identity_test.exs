@@ -83,22 +83,22 @@ defmodule IdentityTest do
     end
 
     test "returns true for a correct password", %{password: password, user: user} do
-      assert Identity.valid_password?(user, password)
+      assert Identity.correct_password?(user, password)
     end
 
     test "returns false for an incorrect password", %{user: user} do
-      refute Identity.valid_password?(user, "wrong")
+      refute Identity.correct_password?(user, "wrong")
     end
   end
 
-  describe "add_email_and_login_changeset/0" do
+  describe "create_email_and_login_changeset/0" do
     test "returns a changeset" do
-      assert %Ecto.Changeset{} = changeset = Identity.add_email_and_login_changeset()
+      assert %Ecto.Changeset{} = changeset = Identity.create_email_and_login_changeset()
       assert changeset.required == [:email, :password]
     end
   end
 
-  describe "add_email_and_login/2" do
+  describe "create_email_and_login/2" do
     setup do
       %{
         email: Factory.unique_user_email(),
@@ -107,39 +107,40 @@ defmodule IdentityTest do
     end
 
     test "requires email to be set" do
-      {:error, changeset} = Identity.add_email_and_login(%{email: nil})
+      {:error, changeset} = Identity.create_email_and_login(%{email: nil})
       assert %{email: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "validates email when given" do
-      {:error, changeset} = Identity.add_email_and_login(%{email: "not valid"})
+      {:error, changeset} = Identity.create_email_and_login(%{email: "not valid"})
       assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
     end
 
     test "validates maximum value for email for security" do
       too_long = String.duplicate("db", 100)
-      {:error, changeset} = Identity.add_email_and_login(%{email: too_long})
+      {:error, changeset} = Identity.create_email_and_login(%{email: too_long})
       assert "should be at most 160 character(s)" in errors_on(changeset).email
     end
 
     test "validates email uniqueness" do
       %{email: email} = Factory.insert(:email)
-      {:error, changeset} = Identity.add_email_and_login(%{email: email})
+      {:error, changeset} = Identity.create_email_and_login(%{email: email})
       assert "has already been taken" in errors_on(changeset).email
 
       # Now try with the upper cased email too, to check that email case is ignored.
-      {:error, changeset} = Identity.add_email_and_login(%{email: String.upcase(email)})
+      {:error, changeset} = Identity.create_email_and_login(%{email: String.upcase(email)})
 
       assert "has already been taken" in errors_on(changeset).email
     end
 
     test "requires password to be set", %{email: email} do
-      {:error, changeset} = Identity.add_email_and_login(%{email: email})
+      {:error, changeset} = Identity.create_email_and_login(%{email: email})
       assert %{password: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "validates password when given", %{email: email} do
-      {:error, changeset} = Identity.add_email_and_login(%{email: email, password: "not valid"})
+      {:error, changeset} =
+        Identity.create_email_and_login(%{email: email, password: "not valid"})
 
       assert %{password: ["should be at least 12 character(s)"]} = errors_on(changeset)
     end
@@ -147,13 +148,13 @@ defmodule IdentityTest do
     test "validates maximum value for password for security", %{email: email} do
       too_long = String.duplicate("db", 100)
 
-      {:error, changeset} = Identity.add_email_and_login(%{email: email, password: too_long})
+      {:error, changeset} = Identity.create_email_and_login(%{email: email, password: too_long})
 
       assert "should be at most 80 character(s)" in errors_on(changeset).password
     end
 
     test "registers users with a hashed password", %{email: email, password: password} do
-      assert {:ok, _user} = Identity.add_email_and_login(%{email: email, password: password})
+      assert {:ok, _user} = Identity.create_email_and_login(%{email: email, password: password})
 
       assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert email_struct.email == email
@@ -172,7 +173,7 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
 
       assert {:ok, _user} =
-               Identity.add_email_and_login(user, %{email: email, password: password})
+               Identity.create_email_and_login(user, %{email: email, password: password})
 
       assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert is_struct(email_struct.user, User)
@@ -187,7 +188,7 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
 
       assert {:ok, _user} =
-               Identity.add_email_and_login(user, %{email: email, password: password})
+               Identity.create_email_and_login(user, %{email: email, password: password})
 
       assert_received {:confirm_email, ^user, token}
       assert {:ok, token} = Base.url_decode64(token, padding: false)
@@ -196,7 +197,7 @@ defmodule IdentityTest do
     end
   end
 
-  describe "register_password/2" do
+  describe "create_login/2" do
     setup do
       %{
         password: Factory.valid_user_password(),
@@ -205,23 +206,23 @@ defmodule IdentityTest do
     end
 
     test "requires password to be set", %{user: user} do
-      {:error, changeset} = Identity.register_password(user, "")
+      {:error, changeset} = Identity.create_login(user, "")
       assert %{password: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "validates password when given", %{user: user} do
-      {:error, changeset} = Identity.register_password(user, "not valid")
+      {:error, changeset} = Identity.create_login(user, "not valid")
       assert %{password: ["should be at least 12 character(s)"]} = errors_on(changeset)
     end
 
     test "validates maximum value for password for security", %{user: user} do
       too_long = String.duplicate("db", 100)
-      {:error, changeset} = Identity.register_password(user, too_long)
+      {:error, changeset} = Identity.create_login(user, too_long)
       assert "should be at most 80 character(s)" in errors_on(changeset).password
     end
 
     test "registers users with a hashed password", %{password: password, user: user} do
-      assert {:ok, _user} = Identity.register_password(user, password)
+      assert {:ok, _user} = Identity.create_login(user, password)
 
       assert [login] = preload(BasicLogin, :user) |> Repo.all()
       assert is_binary(login.hashed_password)
@@ -255,7 +256,7 @@ defmodule IdentityTest do
     end
   end
 
-  describe "change_password/2" do
+  describe "update_password/2" do
     setup do
       user = Factory.insert(:user)
       email = Factory.insert(:email, user: user)
@@ -266,7 +267,7 @@ defmodule IdentityTest do
 
     test "validates password", %{user: user} do
       {:error, changeset} =
-        Identity.change_password(user, Factory.valid_user_password(), %{
+        Identity.update_password(user, Factory.valid_user_password(), %{
           password: "not valid",
           password_confirmation: "another"
         })
@@ -281,21 +282,21 @@ defmodule IdentityTest do
       too_long = String.duplicate("db", 100)
 
       {:error, changeset} =
-        Identity.change_password(user, Factory.valid_user_password(), %{password: too_long})
+        Identity.update_password(user, Factory.valid_user_password(), %{password: too_long})
 
       assert "should be at most 80 character(s)" in errors_on(changeset).password
     end
 
     test "validates current password", %{user: user} do
       {:error, changeset} =
-        Identity.change_password(user, "invalid", %{password: Factory.valid_user_password()})
+        Identity.update_password(user, "invalid", %{password: Factory.valid_user_password()})
 
       assert %{current_password: ["is not valid"]} = errors_on(changeset)
     end
 
     test "updates the password", %{email: email, user: user} do
       :ok =
-        Identity.change_password(user, Factory.valid_user_password(), %{
+        Identity.update_password(user, Factory.valid_user_password(), %{
           password: "new valid password"
         })
 
@@ -307,7 +308,7 @@ defmodule IdentityTest do
       Identity.request_password_reset(user)
 
       :ok =
-        Identity.change_password(user, Factory.valid_user_password(), %{
+        Identity.update_password(user, Factory.valid_user_password(), %{
           password: "new valid password"
         })
 
@@ -487,45 +488,45 @@ defmodule IdentityTest do
     end
   end
 
-  describe "request_register_email/0" do
+  describe "create_email_changeset/0" do
     test "returns a changeset" do
-      assert %Ecto.Changeset{errors: []} = Identity.request_register_email()
+      assert %Ecto.Changeset{errors: []} = Identity.create_email_changeset()
     end
   end
 
-  describe "register_email/2" do
+  describe "create_email/2" do
     setup do
       %{user: Factory.insert(:user)}
     end
 
     test "requires email to be set", %{user: user} do
-      {:error, changeset} = Identity.register_email(user, "")
+      {:error, changeset} = Identity.create_email(user, "")
       assert %{email: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "validates email when given", %{user: user} do
-      {:error, changeset} = Identity.register_email(user, "not valid")
+      {:error, changeset} = Identity.create_email(user, "not valid")
       assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
     end
 
     test "validates maximum values for email for security", %{user: user} do
       too_long = String.duplicate("db", 100)
-      {:error, changeset} = Identity.register_email(user, too_long)
+      {:error, changeset} = Identity.create_email(user, too_long)
       assert "should be at most 160 character(s)" in errors_on(changeset).email
     end
 
     test "validates email uniqueness", %{user: user} do
       %{email: email} = Factory.insert(:email)
-      {:error, changeset} = Identity.register_email(user, email)
+      {:error, changeset} = Identity.create_email(user, email)
       assert "has already been taken" in errors_on(changeset).email
 
       # Now try with the upper cased email too, to check that email case is ignored.
-      {:error, changeset} = Identity.register_email(user, String.upcase(email))
+      {:error, changeset} = Identity.create_email(user, String.upcase(email))
       assert "has already been taken" in errors_on(changeset).email
     end
 
     test "sends token through notification", %{user: user} do
-      assert :ok = Identity.register_email(user, "person@example.com")
+      assert :ok = Identity.create_email(user, "person@example.com")
       assert_received {:confirm_email, ^user, token}
       assert {:ok, token} = Base.url_decode64(token, padding: false)
       assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
@@ -533,7 +534,7 @@ defmodule IdentityTest do
     end
   end
 
-  describe "register_email/3" do
+  describe "create_email/3" do
     setup do
       user = Factory.insert(:user)
       password = Factory.valid_user_password()
@@ -543,10 +544,10 @@ defmodule IdentityTest do
     end
 
     test "validates a user's password", %{password: password, user: user} do
-      assert {:error, changeset} = Identity.register_email(user, "person@example.com", "wrong")
+      assert {:error, changeset} = Identity.create_email(user, "person@example.com", "wrong")
       assert "is invalid" in errors_on(changeset).password
 
-      assert :ok = Identity.register_email(user, "person@example.com", password)
+      assert :ok = Identity.create_email(user, "person@example.com", password)
     end
   end
 
@@ -570,7 +571,7 @@ defmodule IdentityTest do
     end
   end
 
-  describe "remove_email/2" do
+  describe "delete_email/2" do
     setup do
       user = Factory.insert(:user)
       email = Factory.insert(:email, user: user)
@@ -579,20 +580,20 @@ defmodule IdentityTest do
 
     test "removes email record", %{email: email, user: user} do
       Factory.insert(:email, user: user)
-      assert :ok = Identity.remove_email(user, email.email)
+      assert :ok = Identity.delete_email(user, email.email)
     end
 
     test "returns error for only email", %{email: email, user: user} do
-      assert {:error, :only_email} = Identity.remove_email(user, email.email)
+      assert {:error, :only_email} = Identity.delete_email(user, email.email)
     end
 
     test "returns error for only confirmed email", %{email: email, user: user} do
       Factory.insert(:email, user: user, confirmed_at: nil)
-      assert {:error, :only_email} = Identity.remove_email(user, email.email)
+      assert {:error, :only_email} = Identity.delete_email(user, email.email)
     end
 
     test "returns error for unknown email", %{user: user} do
-      assert {:error, :not_found} = Identity.remove_email(user, "unknown@example.com")
+      assert {:error, :not_found} = Identity.delete_email(user, "unknown@example.com")
     end
   end
 

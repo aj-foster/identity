@@ -96,7 +96,7 @@ defmodule Identity do
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     login = Email.get_login_by_email_query(email) |> repo().one()
-    if BasicLogin.valid_password?(login, password), do: login.user
+    if BasicLogin.correct_password?(login, password), do: login.user
   end
 
   @doc """
@@ -110,27 +110,27 @@ defmodule Identity do
 
   """
   @doc section: :login
-  @spec valid_password?(User.t(), String.t()) :: boolean
-  def valid_password?(%User{} = user, password) when is_binary(password) do
+  @spec correct_password?(User.t(), String.t()) :: boolean
+  def correct_password?(%User{} = user, password) when is_binary(password) do
     BasicLogin.get_login_by_user_query(user)
     |> repo().one()
-    |> BasicLogin.valid_password?(password)
+    |> BasicLogin.correct_password?(password)
   end
 
   @doc """
   Create a changeset for registering a new email and password login.
 
-  The fields in the returned changeset are compatible with `add_email_and_login/2`.
+  The fields in the returned changeset are compatible with `create_email_and_login/2`.
 
   ## Examples
 
-      iex> Identity.add_email_and_login_changeset()
+      iex> Identity.create_email_and_login_changeset()
       #Ecto.Changeset<...>
 
   """
   @doc section: :login
-  @spec add_email_and_login_changeset :: Ecto.Changeset.t(Changeset.email_password_data())
-  def add_email_and_login_changeset do
+  @spec create_email_and_login_changeset :: Ecto.Changeset.t(Changeset.email_password_data())
+  def create_email_and_login_changeset do
     Changeset.email_and_password(%{})
   end
 
@@ -145,19 +145,19 @@ defmodule Identity do
   ## Changeset
 
   In case of error, this function returns a schemaless changeset with `:email` and `:password`
-  fields. Use `add_email_and_login_changeset/0` to get a blank copy of this changeset for
+  fields. Use `create_email_and_login_changeset/0` to get a blank copy of this changeset for
   rendering a form.
 
   ## Examples
 
-      iex> Identity.add_email_and_login(%{email: "person@example.com", password: "password123"})
+      iex> Identity.create_email_and_login(%{email: "person@example.com", password: "password123"})
       {:ok, %User{}}
 
   """
   @doc section: :login
-  @spec add_email_and_login(%User{}, %{email: String.t(), password: String.t()}) ::
+  @spec create_email_and_login(%User{}, %{email: String.t(), password: String.t()}) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t(Changeset.email_password_data())}
-  def add_email_and_login(user \\ %User{}, attrs) do
+  def create_email_and_login(user \\ %User{}, attrs) do
     changeset = Changeset.email_and_password(attrs)
 
     with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
@@ -189,17 +189,17 @@ defmodule Identity do
   Create a basic login for the given `user`.
 
   Use this function with an existing user to add email/password login if they currently log in with
-  another method. If registering a brand new user, use `add_email_and_login/2` instead.
+  another method. If registering a brand new user, use `create_email_and_login/2` instead.
 
   ## Examples
 
-      iex> Identity.register_password(user, password)
+      iex> Identity.create_login(user, password)
       {:ok, %User{}}
 
   """
   @doc section: :login
-  @spec register_password(User.t(), String.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def register_password(user, password) do
+  @spec create_login(User.t(), String.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def create_login(user, password) do
     %BasicLogin{}
     |> BasicLogin.registration_changeset(%{password: password})
     |> Ecto.Changeset.put_assoc(:user, user)
@@ -227,13 +227,13 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.change_password(user, "password123", %{"password" => "new_password", "password_confirmation" => "new_password"})
+      iex> Identity.update_password(user, "password123", %{"password" => "new_password", "password_confirmation" => "new_password"})
       :ok
 
   """
   @doc section: :login
-  @spec change_password(User.t(), String.t(), map) :: :ok | {:error, Ecto.Changeset.t()}
-  def change_password(%User{} = user, current_password, attrs \\ %{}) do
+  @spec update_password(User.t(), String.t(), map) :: :ok | {:error, Ecto.Changeset.t()}
+  def update_password(%User{} = user, current_password, attrs \\ %{}) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
     login_changeset =
@@ -434,13 +434,13 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.request_register_email()
+      iex> Identity.create_email_changeset()
       #Ecto.Changeset<...>
 
   """
   @doc section: :email
-  @spec request_register_email :: Ecto.Changeset.t()
-  def request_register_email do
+  @spec create_email_changeset :: Ecto.Changeset.t()
+  def create_email_changeset do
     Ecto.Changeset.change(%Email{})
   end
 
@@ -451,17 +451,17 @@ defmodule Identity do
   confirmation of the email can be required using the notifier and `confirm_email/1`. See
   `c:Identity.Notifier.confirm_email/2`.
 
-  See also `register_email/3` for a variation that requires a password.
+  See also `create_email/3` for a variation that requires a password.
 
   ## Examples
 
-      iex> Identity.register_email(user, "person2@exaple.com")
+      iex> Identity.create_email(user, "person2@exaple.com")
       :ok
 
   """
   @doc section: :email
-  @spec register_email(User.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t() | any}
-  def register_email(user, email) do
+  @spec create_email(User.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t() | any}
+  def create_email(user, email) do
     changeset =
       %Email{}
       |> Email.registration_changeset(%{email: email})
@@ -479,22 +479,22 @@ defmodule Identity do
   confirmation of the email can be required using the notifier and `confirm_email/1`. See
   `c:Identity.Notifier.confirm_email/2`.
 
-  See also `register_email/2` for a variation that does not require a password.
+  See also `create_email/2` for a variation that does not require a password.
 
   ## Examples
 
-      iex> Identity.register_email(user, "person2@exaple.com", "password")
+      iex> Identity.create_email(user, "person2@exaple.com", "password")
       :ok
 
   """
   @doc section: :email
-  @spec register_email(User.t(), String.t(), String.t()) ::
+  @spec create_email(User.t(), String.t(), String.t()) ::
           :ok | {:error, Ecto.Changeset.t() | any}
-  def register_email(user, email, password) do
-    if valid_password?(user, password) do
-      register_email(user, email)
+  def create_email(user, email, password) do
+    if correct_password?(user, password) do
+      create_email(user, email)
     else
-      request_register_email()
+      create_email_changeset()
       |> Ecto.Changeset.add_error(:password, "is invalid")
       |> Ecto.Changeset.apply_action(:insert)
     end
@@ -531,13 +531,13 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.remove_email(user, "person@example.com")
+      iex> Identity.delete_email(user, "person@example.com")
       :ok
 
   """
   @doc section: :email
-  @spec remove_email(User.t(), String.t()) :: :ok | {:error, :only_email | :not_found}
-  def remove_email(user, email) do
+  @spec delete_email(User.t(), String.t()) :: :ok | {:error, :only_email | :not_found}
+  def delete_email(user, email) do
     Email.list_emails_by_user_query(user.id)
     |> repo().all()
     |> Enum.split_with(&is_nil(&1.confirmed_at))

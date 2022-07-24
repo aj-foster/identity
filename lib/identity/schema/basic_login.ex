@@ -120,13 +120,13 @@ defmodule Identity.Schema.BasicLogin do
   end
 
   @doc "Verifies the password, or runs a similarly-timed function to prevent timing attacks."
-  @spec valid_password?(t | nil, String.t()) :: boolean
-  def valid_password?(%__MODULE__{hashed_password: hashed_password}, password)
+  @spec correct_password?(t | nil, String.t()) :: boolean
+  def correct_password?(%__MODULE__{hashed_password: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Bcrypt.verify_pass(password, hashed_password)
   end
 
-  def valid_password?(_, _) do
+  def correct_password?(_, _) do
     Bcrypt.no_user_verify()
     false
   end
@@ -134,7 +134,7 @@ defmodule Identity.Schema.BasicLogin do
   @doc "Validate the current password when changing the password."
   @spec validate_current_password(Changeset.t(t), String.t()) :: Changeset.t(t)
   def validate_current_password(changeset, password) do
-    if valid_password?(changeset.data, password) do
+    if correct_password?(changeset.data, password) do
       changeset
     else
       Changeset.add_error(changeset, :current_password, "is not valid")

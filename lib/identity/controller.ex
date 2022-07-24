@@ -323,7 +323,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :email
     @spec new_email(Conn.t(), any) :: Conn.t()
     def new_email(conn, _params) do
-      render(conn, "new_email.html", changeset: Identity.request_register_email())
+      render(conn, "new_email.html", changeset: Identity.create_email_changeset())
     end
 
     @doc """
@@ -357,7 +357,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     def create_email(conn, %{"email" => %{"email" => email, "password" => password}}) do
       user = conn.assigns[:current_user]
 
-      case Identity.register_email(user, email, password) do
+      case Identity.create_email(user, email, password) do
         :ok ->
           routes = Module.concat(router_module(conn), Helpers)
 
