@@ -28,6 +28,9 @@ defmodule Identity.Schema.Email do
           user: Ecto.Schema.belongs_to(User.t())
         }
 
+  @typedoc "Dataset with a single email field, such as during registration."
+  @type email_data :: %{:email => String.t(), optional(any) => any}
+
   @derive {Inspect, except: [:hashed_token]}
   @foreign_key_type :binary_id
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -56,19 +59,43 @@ defmodule Identity.Schema.Email do
     |> put_token()
   end
 
-  @spec validate_email(Changeset.t(%__MODULE__{})) :: Changeset.t(%__MODULE__{})
-  defp validate_email(changeset) do
+  @spec validate_email(Changeset.t(email_data)) :: Changeset.t(email_data)
+  def validate_email(changeset) do
     changeset
     |> Changeset.validate_required([:email])
     |> Changeset.validate_format(:email, ~r/^[^\s]+@[^\s]+$/,
       message: "must have the @ sign and no spaces"
     )
     |> Changeset.validate_length(:email, max: 160)
-    |> Changeset.unsafe_validate_unique(:email, repo())
+    |> unique_email()
+  end
+
+  @spec unique_email(Changeset.t(email_data)) :: Changeset.t(email_data)
+  defp unique_email(%Changeset{data: %_schema{}} = changeset) do
+    Changeset.unsafe_validate_unique(changeset, :email, repo())
     |> Changeset.unique_constraint(:email)
   end
 
-  @spec put_token(Changeset.t(%__MODULE__{})) :: Changeset.t(%__MODULE__{})
+  defp unique_email(changeset) do
+    new_value = Changeset.get_change(changeset, :email)
+    has_error? = Keyword.has_key?(changeset.errors, :email)
+
+    cond do
+      has_error? or is_nil(new_value) ->
+        changeset
+
+      get_by_email_query(new_value) |> repo().exists?() ->
+        Changeset.add_error(changeset, :email, "has already been taken",
+          validation: :unsafe_unique,
+          fields: [:email]
+        )
+
+      true ->
+        changeset
+    end
+  end
+
+  @spec put_token(Changeset.t(email_data)) :: Changeset.t(email_data)
   defp put_token(changeset) do
     now = DateTime.utc_now()
     token = Token.generate_token()
