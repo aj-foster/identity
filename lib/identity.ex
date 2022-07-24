@@ -2,6 +2,7 @@ defmodule Identity do
   @moduledoc """
   Provides access to users, sessions, and logins.
   """
+  alias Identity.Changeset
   alias Identity.Schema.BasicLogin
   alias Identity.Schema.Email
   alias Identity.Schema.PasswordToken
@@ -117,6 +118,21 @@ defmodule Identity do
   end
 
   @doc """
+  Create a changeset for registering a new email and password login.
+
+  ## Examples
+
+      iex> Identity.request_register_email_and_password()
+      #Ecto.Changeset<...>
+
+  """
+  @doc section: :login
+  @spec request_register_email_and_password :: Ecto.Changeset.t()
+  def request_register_email_and_password do
+    Changeset.email_and_password(%{})
+  end
+
+  @doc """
   Create a basic login and unconfirmed email for the given `user` or a brand new user.
 
   Use this function with an existing user to add email/password login if they currently log in with
@@ -132,28 +148,32 @@ defmodule Identity do
   """
   @doc section: :login
   @spec register_email_and_password(%User{}, %{email: String.t(), password: String.t()}) ::
-          {:ok, User.t()} | {:error, atom, Ecto.Changeset.t(), map}
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def register_email_and_password(user \\ %User{}, attrs) do
-    email_changeset =
-      %Email{}
-      |> Email.registration_changeset(attrs)
-      |> Ecto.Changeset.put_assoc(:user, user)
+    changeset = Changeset.email_and_password(attrs)
 
-    Ecto.Multi.new()
-    |> Ecto.Multi.insert(:email, email_changeset)
-    |> Ecto.Multi.insert(:login, fn %{email: email} ->
-      %BasicLogin{}
-      |> BasicLogin.registration_changeset(attrs)
-      |> Ecto.Changeset.put_assoc(:user, email.user)
-    end)
-    |> repo().transaction()
-    |> case do
-      {:ok, %{email: %Email{token: encoded_token, user: user}}} ->
-        notifier().confirm_email(user, encoded_token)
-        {:ok, user}
+    with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
+      email_changeset =
+        %Email{}
+        |> Email.registration_changeset(attrs)
+        |> Ecto.Changeset.put_assoc(:user, user)
 
-      error ->
-        error
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:email, email_changeset)
+      |> Ecto.Multi.insert(:login, fn %{email: email} ->
+        %BasicLogin{}
+        |> BasicLogin.registration_changeset(attrs)
+        |> Ecto.Changeset.put_assoc(:user, email.user)
+      end)
+      |> repo().transaction()
+      |> case do
+        {:ok, %{email: %Email{token: encoded_token, user: user}}} ->
+          notifier().confirm_email(user, encoded_token)
+          {:ok, user}
+
+        {:error, _phase, changeset, _changes} ->
+          {:error, Map.put(changeset, :errors, changeset.errors)}
+      end
     end
   end
 
