@@ -91,14 +91,14 @@ defmodule IdentityTest do
     end
   end
 
-  describe "request_register_email_and_password/0" do
+  describe "add_email_and_login_changeset/0" do
     test "returns a changeset" do
-      assert %Ecto.Changeset{} = changeset = Identity.request_register_email_and_password()
+      assert %Ecto.Changeset{} = changeset = Identity.add_email_and_login_changeset()
       assert changeset.required == [:email, :password]
     end
   end
 
-  describe "register_email_and_password/2" do
+  describe "add_email_and_login/2" do
     setup do
       %{
         email: Factory.unique_user_email(),
@@ -107,40 +107,39 @@ defmodule IdentityTest do
     end
 
     test "requires email to be set" do
-      {:error, changeset} = Identity.register_email_and_password(%{email: nil})
+      {:error, changeset} = Identity.add_email_and_login(%{email: nil})
       assert %{email: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "validates email when given" do
-      {:error, changeset} = Identity.register_email_and_password(%{email: "not valid"})
+      {:error, changeset} = Identity.add_email_and_login(%{email: "not valid"})
       assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
     end
 
     test "validates maximum value for email for security" do
       too_long = String.duplicate("db", 100)
-      {:error, changeset} = Identity.register_email_and_password(%{email: too_long})
+      {:error, changeset} = Identity.add_email_and_login(%{email: too_long})
       assert "should be at most 160 character(s)" in errors_on(changeset).email
     end
 
     test "validates email uniqueness" do
       %{email: email} = Factory.insert(:email)
-      {:error, changeset} = Identity.register_email_and_password(%{email: email})
+      {:error, changeset} = Identity.add_email_and_login(%{email: email})
       assert "has already been taken" in errors_on(changeset).email
 
       # Now try with the upper cased email too, to check that email case is ignored.
-      {:error, changeset} = Identity.register_email_and_password(%{email: String.upcase(email)})
+      {:error, changeset} = Identity.add_email_and_login(%{email: String.upcase(email)})
 
       assert "has already been taken" in errors_on(changeset).email
     end
 
     test "requires password to be set", %{email: email} do
-      {:error, changeset} = Identity.register_email_and_password(%{email: email})
+      {:error, changeset} = Identity.add_email_and_login(%{email: email})
       assert %{password: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "validates password when given", %{email: email} do
-      {:error, changeset} =
-        Identity.register_email_and_password(%{email: email, password: "not valid"})
+      {:error, changeset} = Identity.add_email_and_login(%{email: email, password: "not valid"})
 
       assert %{password: ["should be at least 12 character(s)"]} = errors_on(changeset)
     end
@@ -148,15 +147,13 @@ defmodule IdentityTest do
     test "validates maximum value for password for security", %{email: email} do
       too_long = String.duplicate("db", 100)
 
-      {:error, changeset} =
-        Identity.register_email_and_password(%{email: email, password: too_long})
+      {:error, changeset} = Identity.add_email_and_login(%{email: email, password: too_long})
 
       assert "should be at most 80 character(s)" in errors_on(changeset).password
     end
 
     test "registers users with a hashed password", %{email: email, password: password} do
-      assert {:ok, _user} =
-               Identity.register_email_and_password(%{email: email, password: password})
+      assert {:ok, _user} = Identity.add_email_and_login(%{email: email, password: password})
 
       assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert email_struct.email == email
@@ -175,7 +172,7 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
 
       assert {:ok, _user} =
-               Identity.register_email_and_password(user, %{email: email, password: password})
+               Identity.add_email_and_login(user, %{email: email, password: password})
 
       assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert is_struct(email_struct.user, User)
@@ -190,7 +187,7 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
 
       assert {:ok, _user} =
-               Identity.register_email_and_password(user, %{email: email, password: password})
+               Identity.add_email_and_login(user, %{email: email, password: password})
 
       assert_received {:confirm_email, ^user, token}
       assert {:ok, token} = Base.url_decode64(token, padding: false)

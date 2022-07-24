@@ -120,15 +120,17 @@ defmodule Identity do
   @doc """
   Create a changeset for registering a new email and password login.
 
+  The fields in the returned changeset are compatible with `add_email_and_login/2`.
+
   ## Examples
 
-      iex> Identity.request_register_email_and_password()
+      iex> Identity.add_email_and_login_changeset()
       #Ecto.Changeset<...>
 
   """
   @doc section: :login
-  @spec request_register_email_and_password :: Ecto.Changeset.t()
-  def request_register_email_and_password do
+  @spec add_email_and_login_changeset :: Ecto.Changeset.t(Changeset.email_password_data())
+  def add_email_and_login_changeset do
     Changeset.email_and_password(%{})
   end
 
@@ -140,16 +142,22 @@ defmodule Identity do
   confirmation of the email can be required using the notifier and `confirm_email/1`. See
   `c:Identity.Notifier.confirm_email/2`.
 
+  ## Changeset
+
+  In case of error, this function returns a schemaless changeset with `:email` and `:password`
+  fields. Use `add_email_and_login_changeset/0` to get a blank copy of this changeset for
+  rendering a form.
+
   ## Examples
 
-      iex> Identity.register_email_and_password(%{email: "person@example.com", password: "password123"})
+      iex> Identity.add_email_and_login(%{email: "person@example.com", password: "password123"})
       {:ok, %User{}}
 
   """
   @doc section: :login
-  @spec register_email_and_password(%User{}, %{email: String.t(), password: String.t()}) ::
-          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def register_email_and_password(user \\ %User{}, attrs) do
+  @spec add_email_and_login(%User{}, %{email: String.t(), password: String.t()}) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t(Changeset.email_password_data())}
+  def add_email_and_login(user \\ %User{}, attrs) do
     changeset = Changeset.email_and_password(attrs)
 
     with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
@@ -181,7 +189,7 @@ defmodule Identity do
   Create a basic login for the given `user`.
 
   Use this function with an existing user to add email/password login if they currently log in with
-  another method. If registering a brand new user, use `register_email_and_password/2` instead.
+  another method. If registering a brand new user, use `add_email_and_login/2` instead.
 
   ## Examples
 
@@ -615,7 +623,7 @@ defmodule Identity do
 
   """
   @doc section: :password_reset
-  @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Changeset.t()}
+  @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def reset_password(user, attrs) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
