@@ -28,6 +28,9 @@ defmodule Identity.Schema.BasicLogin do
           user: Ecto.Schema.belongs_to(User.t())
         }
 
+  @typedoc "Dataset with a single password field, such as during registration."
+  @type password_data :: %{:password => String.t(), optional(any) => any}
+
   @derive {Inspect, except: [:password, :otp_secret]}
   @foreign_key_type :binary_id
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -73,15 +76,15 @@ defmodule Identity.Schema.BasicLogin do
     |> validate_password(opts)
   end
 
-  @spec validate_password(Changeset.t(%__MODULE__{}), Keyword.t()) :: Changeset.t(%__MODULE__{})
-  defp validate_password(changeset, opts) do
+  @spec validate_password(Changeset.t(password_data), Keyword.t()) :: Changeset.t(password_data)
+  def validate_password(changeset, opts) do
     changeset
     |> Changeset.validate_required([:password])
     |> Changeset.validate_length(:password, min: 12, max: 80)
     |> maybe_hash_password(opts)
   end
 
-  @spec maybe_hash_password(Changeset.t(%__MODULE__{}), Keyword.t()) :: Changeset.t(%__MODULE__{})
+  @spec maybe_hash_password(Changeset.t(password_data), Keyword.t()) :: Changeset.t(password_data)
   defp maybe_hash_password(changeset, opts) do
     hash_password? = Keyword.get(opts, :hash_password, true)
     password = Changeset.get_change(changeset, :password)
