@@ -42,7 +42,7 @@ defmodule Identity.User do
   @type t :: %__MODULE__{
           emails: Ecto.Schema.has_many(Identity.Schema.Email.t()),
           id: Ecto.UUID.t(),
-          logins: Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
+          login: Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
           password_token: Ecto.Schema.has_one(Identity.Schema.PasswordToken.t() | nil),
           sessions: Ecto.Schema.has_many(Identity.Schema.Session.t())
         }

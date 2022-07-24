@@ -40,7 +40,7 @@ defmodule Identity.Schema do
   defmacro user_associations do
     quote do
       Ecto.Schema.has_many(:emails, Identity.Schema.Email, foreign_key: :user_id)
-      Ecto.Schema.has_one(:logins, Identity.Schema.BasicLogin, foreign_key: :user_id)
+      Ecto.Schema.has_one(:login, Identity.Schema.BasicLogin, foreign_key: :user_id)
       Ecto.Schema.has_one(:password_token, Identity.Schema.PasswordToken, foreign_key: :user_id)
       Ecto.Schema.has_many(:sessions, Identity.Schema.Session, foreign_key: :user_id)
     end
