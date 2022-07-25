@@ -2,9 +2,11 @@ defmodule Identity.Schema.PasswordToken do
   @moduledoc """
   Struct representing a password reset token for a basic login.
 
-  This struct is fully managed by Identity and its migrations. If you find yourself working with
-  this struct directly or changing the underlying table, please share your use case with the
-  maintainers of the library.
+  > #### Note {:.info}
+  >
+  > This struct is fully managed by Identity and its migrations. If you find yourself working with
+  > this struct directly or changing the underlying table, please share your use case with the
+  > maintainers of the library.
   """
   use Ecto.Schema
   import Ecto.Query
