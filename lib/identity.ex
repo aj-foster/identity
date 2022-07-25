@@ -11,15 +11,6 @@ defmodule Identity do
   alias Identity.Schema.Session
   alias Identity.User
 
-  #
-  # Configuration
-  #
-
-  @compile {:inline, notifier: 0, repo: 0}
-  # Note: this is a deliberate performance trade-off for the sake of runtime configuration.
-  defp notifier, do: Application.get_env(:identity, :notifier, Identity.Notifier.Log)
-  defp repo, do: Application.fetch_env!(:identity, :repo)
-
   @user user_schema()
 
   #

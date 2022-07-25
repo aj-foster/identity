@@ -167,11 +167,4 @@ defmodule Identity.Schema.Email do
   defp filter_confirmed_emails(query, confirmed?)
   defp filter_confirmed_emails(query, true), do: where(query, [e], not is_nil(e.confirmed_at))
   defp filter_confirmed_emails(query, _), do: query
-
-  #
-  # Configuration
-  #
-
-  @compile {:inline, repo: 0}
-  defp repo, do: Application.fetch_env!(:identity, :repo)
 end

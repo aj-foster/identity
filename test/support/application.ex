@@ -4,6 +4,7 @@ defmodule Identity.Test.Application do
 
   def start(_type, _args) do
     Logger.configure(level: :warn)
+    Identity.Config.load()
 
     children = [
       Identity.Test.Repo,
