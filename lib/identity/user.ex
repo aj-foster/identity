@@ -35,16 +35,41 @@ defmodule Identity.User do
           user_associations()
         end
       end
+
+  ### Configuration
+
+  With the new user schema defined, it is necessary to tell Identity where to find it. Use the
+  `:user` configuration key:
+
+      # In config.exs or another compile-time configuration file
+      config :identity,
+        user: MyApp.User
+
+  Note that this configuration must be specified at compile time. If changed, it is necessary to
+  recompile identity with `mix deps.compile identity --force`. Runtime modification of the user
+  schema is not supported.
   """
   use Ecto.Schema
   import Identity.Schema
 
-  @type t :: %__MODULE__{
-          emails: Ecto.Schema.has_many(Identity.Schema.Email.t()),
-          id: Ecto.UUID.t(),
-          login: Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
-          password_token: Ecto.Schema.has_one(Identity.Schema.PasswordToken.t() | nil),
-          sessions: Ecto.Schema.has_many(Identity.Schema.Session.t())
+  @typedoc "Generic user struct compatible with Identity."
+  @type t :: %{
+          :emails => Ecto.Schema.has_many(Identity.Schema.Email.t()),
+          :id => Ecto.UUID.t(),
+          :login => Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
+          :password_token => Ecto.Schema.has_one(Identity.Schema.PasswordToken.t() | nil),
+          :sessions => Ecto.Schema.has_many(Identity.Schema.Session.t()),
+          optional(any) => any
+        }
+
+  @typedoc "Generic user struct compatible with Identity, possibly without a defined primary key."
+  @type new :: %{
+          :emails => Ecto.Schema.has_many(Identity.Schema.Email.t()),
+          :id => Ecto.UUID.t() | nil,
+          :login => Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
+          :password_token => Ecto.Schema.has_one(Identity.Schema.PasswordToken.t() | nil),
+          :sessions => Ecto.Schema.has_many(Identity.Schema.Session.t()),
+          optional(any) => any
         }
 
   @foreign_key_type :binary_id

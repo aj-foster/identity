@@ -2,6 +2,8 @@ defmodule Identity do
   @moduledoc """
   Provides access to users, sessions, and logins.
   """
+  import Identity.Config
+
   alias Identity.Changeset
   alias Identity.Schema.BasicLogin
   alias Identity.Schema.Email
@@ -17,6 +19,8 @@ defmodule Identity do
   # Note: this is a deliberate performance trade-off for the sake of runtime configuration.
   defp notifier, do: Application.get_env(:identity, :notifier, Identity.Notifier.Log)
   defp repo, do: Application.fetch_env!(:identity, :repo)
+
+  @user user_schema()
 
   #
   # Users
@@ -36,7 +40,7 @@ defmodule Identity do
   """
   @doc section: :user
   @spec get_user(Ecto.UUID.t()) :: User.t() | nil
-  def get_user(id), do: repo().get(User, id)
+  def get_user(id), do: repo().get(@user, id)
 
   @doc """
   Get a single user by ID, raising if the user does not exist.
@@ -52,7 +56,7 @@ defmodule Identity do
   """
   @doc section: :user
   @spec get_user!(Ecto.UUID.t()) :: User.t() | no_return
-  def get_user!(id), do: repo().get!(User, id)
+  def get_user!(id), do: repo().get!(@user, id)
 
   @doc """
   Get a single user by ID, returning `{:ok, user}` or `{:error, :not_found}`.
@@ -69,8 +73,8 @@ defmodule Identity do
   @doc section: :user
   @spec fetch_user(Ecto.UUID.t()) :: {:ok, User.t()} | {:error, :not_found}
   def fetch_user(id) do
-    case repo().get(User, id) do
-      %User{} = user -> {:ok, user}
+    case repo().get(@user, id) do
+      %@user{} = user -> {:ok, user}
       nil -> {:error, :not_found}
     end
   end
@@ -96,7 +100,10 @@ defmodule Identity do
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     login = Email.get_login_by_email_query(email) |> repo().one()
-    if BasicLogin.correct_password?(login, password), do: login.user
+
+    if BasicLogin.correct_password?(login, password) do
+      %@user{login.user | login: login}
+    end
   end
 
   @doc """
@@ -111,7 +118,7 @@ defmodule Identity do
   """
   @doc section: :login
   @spec correct_password?(User.t(), String.t()) :: boolean
-  def correct_password?(%User{} = user, password) when is_binary(password) do
+  def correct_password?(%@user{} = user, password) when is_binary(password) do
     BasicLogin.get_login_by_user_query(user)
     |> repo().one()
     |> BasicLogin.correct_password?(password)
@@ -155,9 +162,9 @@ defmodule Identity do
 
   """
   @doc section: :login
-  @spec create_email_and_login(%User{}, map) ::
+  @spec create_email_and_login(User.new(), map) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t(Changeset.email_password_data())}
-  def create_email_and_login(user \\ %User{}, attrs) do
+  def create_email_and_login(user \\ %@user{}, attrs) do
     changeset = Changeset.email_and_password(attrs)
 
     with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
@@ -217,7 +224,7 @@ defmodule Identity do
   """
   @doc section: :login
   @spec request_password_change(User.t(), map) :: Ecto.Changeset.t()
-  def request_password_change(%User{} = user, attrs \\ %{}) do
+  def request_password_change(%@user{} = user, attrs \\ %{}) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
     BasicLogin.password_changeset(basic_login, attrs, hash_password: false)
   end
@@ -233,7 +240,7 @@ defmodule Identity do
   """
   @doc section: :login
   @spec update_password(User.t(), String.t(), map) :: :ok | {:error, Ecto.Changeset.t()}
-  def update_password(%User{} = user, current_password, attrs \\ %{}) do
+  def update_password(%@user{} = user, current_password, attrs \\ %{}) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
     login_changeset =
@@ -580,7 +587,7 @@ defmodule Identity do
   """
   @doc section: :password_reset
   @spec request_password_reset(User.t()) :: :ok | {:error, any}
-  def request_password_reset(%User{} = user) do
+  def request_password_reset(%@user{} = user) do
     %PasswordToken{token: encoded_token} =
       PasswordToken.initiate_reset_changeset()
       |> Ecto.Changeset.put_assoc(:user, user)
@@ -602,7 +609,7 @@ defmodule Identity do
   @spec get_user_by_password_token(String.t()) :: User.t() | nil
   def get_user_by_password_token(token) do
     with {:ok, query} <- PasswordToken.get_user_by_token_query(token),
-         %User{} = user <- repo().one(query) do
+         %@user{} = user <- repo().one(query) do
       user
     else
       _ -> nil

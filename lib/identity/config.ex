@@ -17,9 +17,21 @@ defmodule Identity.Config do
   | `notifier` | `module` | Runtime | Name of the module that implements the `Identity.Notifier` behaviour. This module will be called to send notifications to users. Default: `Identity.Notifier.Log` |
   | `remember_me` | `keyword` | Runtime | Cookie options for the "remember me" cookie. See `Identity.Plug` for more details. |
   | `repo` | `module` | Runtime | Name of the Ecto.Repo module for your application, for example `MyApp.Repo` |
-  | `user` | `module` | Compilation | Name of the module that contains your User schema, for example `MyApp.Accounts.User`. This schema must have a UUID primary key called `id`. |
+  | `user` | `module` | Compilation | Name of the module that contains your User schema, for example `MyApp.Accounts.User`. After changing this option, it is necessary to run `mix deps.compile identity --force`. See `Identity.User` for more information. |
 
   Note that runtime configuration can be set in a runtime configuration file (such as `runtime.exs`)
   and changed dynamically using `Application.put_env/4`.
   """
+
+  @doc """
+  Get the configured user schema.
+
+  This function must be called at compile time. Runtime modification of the user schema is not
+  supported. If changed, the application must be recompiled with `mix deps.compile identity --force`.
+  """
+  defmacro user_schema do
+    quote do
+      Application.compile_env(:identity, :user, Identity.User)
+    end
+  end
 end
