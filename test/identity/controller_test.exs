@@ -91,7 +91,7 @@ defmodule Identity.ControllerTest do
     end
   end
 
-  describe "new_2fa/2" do
+  describe "pending_2fa/2" do
     test "renders 2FA form", %{conn: conn} do
       user = Factory.insert(:user)
 

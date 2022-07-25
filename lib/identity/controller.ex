@@ -22,9 +22,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     plug :get_user_by_password_token when action in [:new_password, :update_password]
 
     plug :redirect_if_user_is_authenticated
-         when action in [:new_session, :create_session, :new_2fa, :validate_2fa]
+         when action in [:new_session, :create_session, :pending_2fa, :validate_2fa]
 
-    plug :require_pending_login when action in [:new_2fa, :validate_2fa]
+    plug :require_pending_login when action in [:pending_2fa, :validate_2fa]
     plug :require_authenticated_user when action in [:new_email, :create_email, :confirm_email]
 
     #
@@ -89,7 +89,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           conn
           |> Identity.Plug.log_in_user(user, remember_me: false, pending: true)
           |> put_session(@session_remember_me_pending, remember_me)
-          |> redirect(to: routes.identity_path(conn, :new_2fa))
+          |> redirect(to: routes.identity_path(conn, :pending_2fa))
         else
           conn
           |> put_flash(:info, "Successfully logged in")
@@ -113,15 +113,15 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     ## Render
 
-    Renders `new_2fa.html` with the following assigns:
+    Renders `pending_2fa.html` with the following assigns:
 
       * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
 
     """
     @doc section: :mfa
-    @spec new_2fa(Conn.t(), Conn.params()) :: Conn.t()
-    def new_2fa(conn, _params) do
-      render(conn, "new_2fa.html", error: nil)
+    @spec pending_2fa(Conn.t(), Conn.params()) :: Conn.t()
+    def pending_2fa(conn, _params) do
+      render(conn, "pending_2fa.html", error: nil)
     end
 
     @doc """
@@ -137,7 +137,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     ## Error Response
 
-    In the event of a login failure, renders `new_2fa.html` with:
+    In the event of a login failure, renders `pending_2fa.html` with:
 
       * `:error` (string or `nil`): Error message about the invalid code.
 
@@ -154,7 +154,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         |> put_flash(:info, "Successfully logged in")
         |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
       else
-        render(conn, "new_2fa.html", error: "Invalid two-factor authentication code")
+        render(conn, "pending_2fa.html", error: "Invalid two-factor authentication code")
       end
     end
 

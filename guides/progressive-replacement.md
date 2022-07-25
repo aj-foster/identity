@@ -24,7 +24,7 @@ A complete router scope using these actions and templates looks like this:
 scope "/" do
   get "/session/new", Identity.Controller, :new_session, as: :identity
   post "/session/new", Identity.Controller, :create_session, as: :identity
-  get "/session/2fa", Identity.Controller, :new_2fa, as: :identity
+  get "/session/2fa", Identity.Controller, :pending_2fa, as: :identity
   post "/session/2fa", Identity.Controller, :validate_2fa, as: :identity
 end
 ```
@@ -44,7 +44,7 @@ scope "/" do
 
   get "/session/new", Identity.Controller, :new_session, as: :identity
   post "/session/new", Identity.Controller, :create_session, as: :identity
-  get "/session/2fa", Identity.Controller, :new_2fa, as: :identity
+  get "/session/2fa", Identity.Controller, :pending_2fa, as: :identity
   post "/session/2fa", Identity.Controller, :validate_2fa, as: :identity
 end
 ```
@@ -66,7 +66,7 @@ scope "/" do
   pipe_through :custom_identity
 
   # Provided action with custom template
-  get "/session/2fa", Identity.Controller, :new_2fa, as: :identity
+  get "/session/2fa", Identity.Controller, :pending_2fa, as: :identity
 
   # Custom action using the same custom template
   post "/session/2fa", MyAppWeb.IdentityController, :validate_2fa, as: :identity
