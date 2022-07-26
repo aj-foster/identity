@@ -22,7 +22,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     plug :get_user_by_password_token when action in [:new_password, :update_password]
 
     plug :redirect_if_user_is_authenticated
-         when action in [:new_session, :create_session, :pending_2fa, :validate_2fa]
+         when action in [
+                :new_session,
+                :create_session,
+                :pending_2fa,
+                :validate_2fa,
+                :new_user,
+                :create_user
+              ]
 
     plug :require_pending_login when action in [:pending_2fa, :validate_2fa]
     plug :require_authenticated_user when action in [:new_email, :create_email, :confirm_email]
@@ -400,6 +407,69 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           conn
           |> put_flash(:error, "Email confirmation link is invalid or it has expired")
           |> redirect(to: "/")
+      end
+    end
+
+    @doc """
+    Render form to create a new user with an email and password login.
+
+    To add an email or password login to an existing user, use `new_email/2` and TODO.
+
+    ## Incoming params
+
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `new_user.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for creating a new user with an email and
+        password login. Expects fields `email` and `password`.
+
+    """
+    @doc section: :user
+    @spec new_user(Conn.t(), any) :: Conn.t()
+    def new_user(conn, _params) do
+      changeset = Identity.create_email_and_login_changeset()
+      render(conn, "new_user.html", changeset: changeset)
+    end
+
+    @doc """
+    Create a new user with an email and password login.
+
+    ## Incoming Params
+
+        %{
+          "user" => %{
+            "email" => email,
+            "password" => password
+          }
+        }
+
+    ## Success Response
+
+    Logs in the new user with a flash message informing them to check their email for a
+    confirmation link.
+
+    ## Error Response
+
+    In the event of an creation failure, renders `new_user.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for creating a new user with an email and
+        password login. Expects fields `email` and `password`.
+
+    """
+    @doc section: :user
+    @spec create_user(Conn.t(), Conn.params()) :: Conn.t()
+    def create_user(conn, %{"user" => user_params}) do
+      case Identity.create_email_and_login(user_params) do
+        {:ok, user} ->
+          conn
+          |> put_flash(:info, "A link to confirm your email has been sent to your address.")
+          |> Identity.Plug.log_in_and_redirect_user(user)
+
+        {:error, changeset} ->
+          render(conn, "new_user.html", changeset: changeset)
       end
     end
   end

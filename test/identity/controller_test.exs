@@ -318,4 +318,43 @@ defmodule Identity.ControllerTest do
       assert get_flash(conn, :error) =~ "Email confirmation link is invalid or it has expired"
     end
   end
+
+  describe "new_user/2" do
+    test "renders new user form", %{conn: conn} do
+      conn = get(conn, "/user/new")
+      assert html_response(conn, 200) =~ "form action=\"/user/new\""
+    end
+
+    test "redirects if already logged in", %{conn: conn, user: user} do
+      conn =
+        Identity.Plug.log_in_user(conn, user)
+        |> get("/user/new")
+
+      assert redirected_to(conn) == "/"
+    end
+  end
+
+  describe "create_user/2" do
+    test "creates account and logs the user in", %{conn: conn} do
+      password = Factory.valid_user_password()
+      params = %{"user" => %{"email" => "test@example.com", "password" => password}}
+      conn = post(conn, "/user/new", params)
+
+      assert get_session(conn, :user_token)
+      assert redirected_to(conn) =~ "/"
+
+      # Should be logged in
+      conn = get(conn, "/session/new")
+      assert redirected_to(conn) =~ "/"
+    end
+
+    test "render errors for invalid data", %{conn: conn} do
+      params = %{"user" => %{"email" => "invalid", "password" => "short"}}
+      conn = post(conn, "/user/new", params)
+
+      response = html_response(conn, 200)
+      assert response =~ "must have the @ sign and no spaces"
+      assert response =~ "should be at least 12 character"
+    end
+  end
 end

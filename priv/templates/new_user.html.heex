@@ -1,35 +1,32 @@
-<div class="id_wrapper id_session_new">
-  <h2>Log in</h2>
+<div class="id_wrapper id_user_new">
+  <h2>Create an account</h2>
 
-  <.form let={f} for={@conn} action={routes(@conn).identity_path(@conn, :create_session)} as={:session}>
-    <%= if @error do %>
+  <.form let={f} for={@changeset} action={routes(@conn).identity_path(@conn, :create_user)} as={:user}>
+    <%= if @changeset.action do %>
       <div class="alert alert-danger">
-        <p><%= @error %></p>
+        <p>Something went wrong. Please check the errors below.</p>
       </div>
     <% end %>
 
     <div class="id_field">
       <%= label f, :email %>
       <%= email_input f, :email, required: true %>
+      <%= error_tag f, :email %>
     </div>
 
     <div class="id_field">
       <%= label f, :password %>
       <%= password_input f, :password, required: true %>
-    </div>
-
-    <div class="id_field">
-      <%= label f, :remember_me, "Keep me logged in for 60 days" %>
-      <%= checkbox f, :remember_me %>
+      <%= error_tag f, :password %>
     </div>
 
     <div class="id_submit">
-      <%= submit "Log in" %>
+      <%= submit "Register" %>
     </div>
   </.form>
 
   <div class="id_links">
-    <%= link "Register", to: routes(@conn).identity_path(@conn, :new_user) %> |
+    <%= link "Log in", to: routes(@conn).identity_path(@conn, :new_session) %> |
     <%= link "Forgot your password?", to: routes(@conn).identity_path(@conn, :new_password_token) %>
   </div>
 </div>
