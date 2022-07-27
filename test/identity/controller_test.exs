@@ -196,7 +196,7 @@ defmodule Identity.ControllerTest do
     end
   end
 
-  describe "update_password/2" do
+  describe "create_password/2" do
     setup %{user: user} do
       :ok = Identity.request_password_reset(user)
       assert_received {:reset_password, ^user, encoded_token}

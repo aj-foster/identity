@@ -12,7 +12,7 @@ if Code.ensure_loaded?(Phoenix.Router) do
       get "/password/new", Identity.Controller, :new_password_token, as: :identity
       post "/password/new", Identity.Controller, :create_password_token, as: :identity
       get "/password/:token", Identity.Controller, :new_password, as: :identity
-      put "/password/:token", Identity.Controller, :update_password, as: :identity
+      put "/password/:token", Identity.Controller, :create_password, as: :identity
 
       get "/email/new", Identity.Controller, :new_email, as: :identity
       post "/email/new", Identity.Controller, :create_email, as: :identity

@@ -19,7 +19,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     plug :put_new_view, Identity.Phoenix.View
 
     plug :fetch_current_user
-    plug :get_user_by_password_token when action in [:new_password, :update_password]
+    plug :get_user_by_password_token when action in [:new_password, :create_password]
 
     plug :redirect_if_user_is_authenticated
          when action in [
@@ -248,7 +248,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     end
 
     @doc """
-    Update the user's password using a password reset token.
+    Create a new password using a password reset token.
 
     ## Incoming Params
 
@@ -274,8 +274,8 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     """
     @doc section: :password_reset
-    @spec update_password(Conn.t(), Conn.params()) :: Conn.t()
-    def update_password(conn, %{"password" => password_params}) do
+    @spec create_password(Conn.t(), Conn.params()) :: Conn.t()
+    def create_password(conn, %{"password" => password_params}) do
       user = conn.assigns[@assign_password_reset_user]
 
       case Identity.reset_password(user, password_params) do
