@@ -226,11 +226,12 @@ defmodule Identity do
   ## Examples
 
       iex> Identity.update_password(user, "password123", %{"password" => "new_password", "password_confirmation" => "new_password"})
-      :ok
+      {:ok, %User{}}
 
   """
   @doc section: :login
-  @spec update_password(User.t(), String.t(), map) :: :ok | {:error, Ecto.Changeset.t()}
+  @spec update_password(User.t(), String.t(), map) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_password(%@user{} = user, current_password, attrs \\ %{}) do
     basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
 
@@ -247,7 +248,7 @@ defmodule Identity do
     |> Ecto.Multi.delete_all(:password_resets, reset_token_query)
     |> repo().transaction()
     |> case do
-      {:ok, _} -> :ok
+      {:ok, %{login: login}} -> {:ok, %@user{user | login: login}}
       {:error, :login, changeset, _} -> {:error, changeset}
     end
   end

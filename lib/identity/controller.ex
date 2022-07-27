@@ -32,7 +32,15 @@ if Code.ensure_loaded?(Phoenix.Controller) do
               ]
 
     plug :require_pending_login when action in [:pending_2fa, :validate_2fa]
-    plug :require_authenticated_user when action in [:new_email, :create_email, :confirm_email]
+
+    plug :require_authenticated_user
+         when action in [
+                :new_email,
+                :create_email,
+                :confirm_email,
+                :edit_password,
+                :update_password
+              ]
 
     #
     # Password Login
@@ -470,6 +478,80 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         {:error, changeset} ->
           render(conn, "new_user.html", changeset: changeset)
+      end
+    end
+
+    #
+    # Basic Login
+    #
+
+    @doc """
+    Render a form to change the current user's password, using the current password as verification.
+
+    ## Incoming params
+
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `edit_password.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for updating a password login. Expects fields
+        `password`, `password_confirmation`, and `current_password`.
+
+    """
+    @doc section: :login
+    @spec edit_password(Conn.t(), any) :: Conn.t()
+    def edit_password(conn, _params) do
+      user = conn.assigns[:current_user]
+      changeset = Identity.request_password_change(user)
+      render(conn, "edit_password.html", changeset: changeset)
+    end
+
+    @doc """
+    Update the current user's password, using the current password as verification.
+
+    ## Incoming Params
+
+        %{
+          "password" => %{
+            "current_password" => current_password,
+            "password" => password,
+            "password_confirmation" => password
+          }
+        }
+
+    ## Success Response
+
+    Updates the password, deletes all active sessions, and logs in the user while redirecting to
+    the edit password form.
+
+    ## Error Response
+
+    In the event of an update failure, renders `edit_password.html` with the following assigns:
+
+      * `:changeset` (`Ecto.Changeset`): Changeset for updating a password login. Expects fields
+        `password`, `password_confirmation`, and `current_password`.
+
+    """
+    @doc section: :login
+    @spec update_password(Conn.t(), Conn.params()) :: Conn.t()
+    def update_password(conn, %{"password" => password_params}) do
+      user = conn.assigns[:current_user]
+      %{"current_password" => current_password} = password_params
+
+      case Identity.update_password(user, current_password, password_params) do
+        {:ok, user} ->
+          routes = Module.concat(router_module(conn), Helpers)
+
+          conn
+          |> put_flash(:info, "Password updated successfully.")
+          |> Identity.Plug.log_in_and_redirect_user(user,
+            to: routes.identity_path(conn, :edit_password)
+          )
+
+        {:error, changeset} ->
+          render(conn, "edit_password.html", changeset: changeset)
       end
     end
   end

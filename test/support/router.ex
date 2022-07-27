@@ -20,6 +20,9 @@ if Code.ensure_loaded?(Phoenix.Router) do
 
       get "/user/new", Identity.Controller, :new_user, as: :identity
       post "/user/new", Identity.Controller, :create_user, as: :identity
+
+      get "/user/password", Identity.Controller, :edit_password, as: :identity
+      put "/user/password", Identity.Controller, :update_password, as: :identity
     end
   end
 end
