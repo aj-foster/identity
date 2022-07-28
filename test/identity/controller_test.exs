@@ -334,6 +334,67 @@ defmodule Identity.ControllerTest do
     end
   end
 
+  describe "delete_email/2" do
+    setup %{user: user} do
+      email_one = Factory.insert(:email, user: user)
+      email_two = Factory.insert(:email, user: user)
+      %{email: email_one.email, email_two: email_two.email}
+    end
+
+    test "removes email address", %{conn: conn, email: email, user: user} do
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/user/email", %{"email" => email})
+
+      assert redirected_to(conn) == "/"
+      refute get_flash(conn, :error)
+      refute Identity.get_user_by_email(email)
+    end
+
+    test "does not remove last email for user", %{
+      conn: conn,
+      email: email,
+      email_two: email_two,
+      user: user
+    } do
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/user/email", %{"email" => email})
+        |> delete("/user/email", %{"email" => email_two})
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "at least one"
+      refute Identity.get_user_by_email(email)
+      assert Identity.get_user_by_email(email_two)
+    end
+
+    test "returns error for someone else's email", %{conn: conn, user: user} do
+      other_user = Factory.insert(:user)
+      email = Factory.insert(:email, user: other_user)
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/user/email", %{"email" => email.email})
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "not found"
+      assert Identity.get_user_by_email(email.email)
+    end
+
+    test "returns error for non-existent email", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/user/email", %{"email" => "fake@example.com"})
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "not found"
+    end
+  end
+
   describe "create_user/2" do
     test "creates account and logs the user in", %{conn: conn} do
       password = Factory.valid_user_password()

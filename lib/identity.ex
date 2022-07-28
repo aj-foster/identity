@@ -2,6 +2,7 @@ defmodule Identity do
   @moduledoc """
   Provides access to users, sessions, and logins.
   """
+  import Ecto.Query
   import Identity.Config
 
   alias Identity.Changeset
@@ -551,6 +552,7 @@ defmodule Identity do
 
       _ ->
         Email.get_by_email_query(email)
+        |> where(user_id: ^user.id)
         |> repo().delete_all()
         |> case do
           {1, _} -> :ok

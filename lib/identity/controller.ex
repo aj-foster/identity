@@ -419,6 +419,53 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     end
 
     @doc """
+    Delete an email address belonging to the current user.
+
+    ## Incoming Params
+
+        %{
+          "email" => email
+        }
+
+    ## Success Response
+
+    Redirects to `"/"` with an informational flash message.
+
+    ## Error Response
+
+    In the event of a deletion failure, redirects to `"/"` with an informational flash message.
+    """
+    @doc section: :email
+    @spec delete_email(Conn.t(), Conn.params()) :: Conn.t()
+    def delete_email(conn, %{"email" => email}) do
+      user = conn.assigns[:current_user]
+
+      case Identity.delete_email(user, email) do
+        :ok ->
+          conn
+          |> put_flash(:info, "Email address removed successfully")
+          |> redirect(to: "/")
+
+        {:error, :only_email} ->
+          conn
+          |> put_flash(
+            :error,
+            "Unable to remove email address: accounts must have at least one valid email"
+          )
+          |> redirect(to: "/")
+
+        {:error, :not_found} ->
+          conn
+          |> put_flash(:error, "Unable to remove email address: email not found")
+          |> redirect(to: "/")
+      end
+    end
+
+    #
+    # User
+    #
+
+    @doc """
     Render form to create a new user with an email and password login.
 
     To add an email or password login to an existing user, use `new_email/2` and TODO.
