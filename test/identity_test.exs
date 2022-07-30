@@ -477,6 +477,18 @@ defmodule IdentityTest do
   # Emails
   #
 
+  describe "list_emails/1" do
+    test "returns email addresses for the given user" do
+      user = Factory.insert(:user)
+      [%{email: email_one}, %{email: email_two}] = Factory.insert_list(2, :email, user: user)
+      Factory.insert(:email)
+
+      emails = Identity.list_emails(user)
+      assert length(emails) == 2
+      assert MapSet.new(emails) == MapSet.new([email_one, email_two])
+    end
+  end
+
   describe "get_user_by_email/1" do
     test "does not return the user if the email does not exist" do
       refute Identity.get_user_by_email("unknown@example.com")

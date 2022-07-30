@@ -411,6 +411,22 @@ defmodule Identity do
   #
 
   @doc """
+  List email addresses for the given `user`.
+
+  ## Examples
+
+      iex> Identity.list_emails(user)
+      ["one@example.com", "two@example.com"]
+
+  """
+  @spec list_emails(User.t()) :: [String.t()]
+  def list_emails(user) do
+    Email.list_emails_by_user_query(user.id)
+    |> repo().all()
+    |> Enum.map(& &1.email)
+  end
+
+  @doc """
   Get the user associated with a given `email` address.
 
   ## Examples
