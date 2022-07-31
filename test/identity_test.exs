@@ -295,7 +295,7 @@ defmodule IdentityTest do
     end
 
     test "updates the password", %{email: email, user: user} do
-      :ok =
+      {:ok, %User{}} =
         Identity.update_password(user, Factory.valid_user_password(), %{
           password: "new valid password"
         })
@@ -307,7 +307,7 @@ defmodule IdentityTest do
       Identity.create_session(user, "test")
       Identity.request_password_reset(user)
 
-      :ok =
+      {:ok, %User{}} =
         Identity.update_password(user, Factory.valid_user_password(), %{
           password: "new valid password"
         })
