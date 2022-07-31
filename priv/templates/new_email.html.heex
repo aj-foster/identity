@@ -1,21 +1,26 @@
 <div class="id_wrapper id_email_new">
   <h2>Add email address</h2>
 
-  <.form let={f} for={@changeset} action={routes(@conn).identity_path(@conn, :create_email)} as={:email}>
+  <.form
+    let={f}
+    for={@changeset}
+    action={routes(@conn).identity_path(@conn, :create_email)}
+    as={:email}
+  >
     <div class="id_field">
-      <%= label f, :email, "New email address" %>
-      <%= email_input f, :email, required: true %>
-      <%= error_tag f, :email %>
+      <%= label(f, :email, "New email address") %>
+      <%= email_input(f, :email, required: true) %>
+      <%= error_tag(f, :email) %>
     </div>
 
     <div class="id_field">
-      <%= label f, :password, "Verify password" %>
-      <%= password_input f, :password, required: true %>
-      <%= error_tag f, :password %>
+      <%= label(f, :password, "Verify password") %>
+      <%= password_input(f, :password, required: true) %>
+      <%= error_tag(f, :password) %>
     </div>
 
     <div class="id_submit">
-      <%= submit "Add email" %>
+      <%= submit("Add email") %>
     </div>
   </.form>
 </div>
