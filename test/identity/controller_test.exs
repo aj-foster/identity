@@ -74,7 +74,7 @@ defmodule Identity.ControllerTest do
       password: password,
       user: user
     } do
-      changeset = Identity.request_enable_2fa(user)
+      changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
       Identity.enable_2fa(changeset, otp)
@@ -132,7 +132,7 @@ defmodule Identity.ControllerTest do
     end
 
     test "accepts a valid 2FA code", %{conn: conn, user: user} do
-      changeset = Identity.request_enable_2fa(user)
+      changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
       Identity.enable_2fa(changeset, otp)
@@ -151,7 +151,7 @@ defmodule Identity.ControllerTest do
     end
 
     test "rejects an invalid 2FA code", %{conn: conn, user: user} do
-      changeset = Identity.request_enable_2fa(user)
+      changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
       Identity.enable_2fa(changeset, otp)

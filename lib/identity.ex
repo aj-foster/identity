@@ -266,20 +266,20 @@ defmodule Identity do
 
   ## Examples
 
-      iex> Identity.request_enable_2fa(user)
+      iex> Identity.enable_2fa_changeset(user)
       #Ecto.Changeset<changes: %{otp_secret: "**redacted**"}>
 
   """
   @doc section: :mfa
-  @spec request_enable_2fa(User.t()) :: Ecto.Changeset.t(BasicLogin.t())
-  def request_enable_2fa(user) do
+  @spec enable_2fa_changeset(User.t()) :: Ecto.Changeset.t(BasicLogin.t())
+  def enable_2fa_changeset(user) do
     BasicLogin.get_login_by_user_query(user)
     |> repo().one()
     |> BasicLogin.generate_otp_secret_changeset()
   end
 
   @doc """
-  Enable 2FA for the login changeset returned by `request_enable_2fa/1`.
+  Enable 2FA for the login changeset returned by `enable_2fa_changeset/1`.
 
   This function will first ensure the supplied 6-digit code is valid. If successful, a set of 10
   backup codes will be returned.
