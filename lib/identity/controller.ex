@@ -6,9 +6,12 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     This module is part of a [Progressive Replacement](guides/progressive-replacement.md) plan. See
     that document for examples of the various ways to use this functionality.
     """
-    use Phoenix.Controller, put_default_views: false, namespace: Identity
+    import Plug.Conn, except: [delete_session: 2]
+    import Phoenix.Controller
+    use Phoenix.Controller.Pipeline
     import Identity.Plug
 
+    alias Phoenix.Controller
     alias Plug.Conn
 
     @assign_password_reset_user :password_reset_user
@@ -66,7 +69,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :session
     @spec new_session(Conn.t(), Conn.params()) :: Conn.t()
     def new_session(conn, _params) do
-      render(conn, "new_session.html", error: nil)
+      Controller.render(conn, "new_session.html", error: nil)
     end
 
     @doc """
@@ -99,20 +102,39 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       if user = Identity.get_user_by_email_and_password(email, password) do
         # TODO: Can we preload the login on the user?
         if Identity.enabled_2fa?(user) do
-          routes = Module.concat(router_module(conn), Helpers)
+          routes = Module.concat(Controller.router_module(conn), Helpers)
 
           conn
           |> Identity.Plug.log_in_user(user, remember_me: false, pending: true)
-          |> put_session(@session_remember_me_pending, remember_me)
-          |> redirect(to: routes.identity_path(conn, :pending_2fa))
+          |> Conn.put_session(@session_remember_me_pending, remember_me)
+          |> Controller.redirect(to: routes.identity_path(conn, :pending_2fa))
         else
           conn
-          |> put_flash(:info, "Successfully logged in")
+          |> Controller.put_flash(:info, "Successfully logged in")
           |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
         end
       else
-        render(conn, "new_session.html", error: "Invalid e-mail or password")
+        Controller.render(conn, "new_session.html", error: "Invalid e-mail or password")
       end
+    end
+
+    @doc """
+    Log out the current user and return to the root route.
+
+    ## Incoming Params
+
+    This action has no incoming params.
+
+    ## Response
+
+    Logs out the current user and redirects to `"/"`.
+    """
+    @doc section: :session
+    @spec delete_session(Conn.t(), any) :: Conn.t()
+    def delete_session(conn, _params) do
+      conn
+      |> Controller.put_flash(:info, "Successfully logged out")
+      |> Identity.Plug.log_out_user()
     end
 
     #
@@ -136,7 +158,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :mfa
     @spec pending_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def pending_2fa(conn, _params) do
-      render(conn, "pending_2fa.html", error: nil)
+      Controller.render(conn, "pending_2fa.html", error: nil)
     end
 
     @doc """
@@ -161,15 +183,17 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @spec validate_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def validate_2fa(conn, %{"session" => %{"code" => code}}) do
       user = conn.assigns[:current_user]
-      remember_me = get_session(conn, @session_remember_me_pending)
+      remember_me = Conn.get_session(conn, @session_remember_me_pending)
 
       if Identity.valid_2fa?(user, code) do
         conn
-        |> delete_session(@session_remember_me_pending)
-        |> put_flash(:info, "Successfully logged in")
+        |> Plug.Conn.delete_session(@session_remember_me_pending)
+        |> Controller.put_flash(:info, "Successfully logged in")
         |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
       else
-        render(conn, "pending_2fa.html", error: "Invalid two-factor authentication code")
+        Controller.render(conn, "pending_2fa.html",
+          error: "Invalid two-factor authentication code"
+        )
       end
     end
 
@@ -194,7 +218,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :password_reset
     @spec new_password_token(Conn.t(), Conn.params()) :: Conn.t()
     def new_password_token(conn, _params) do
-      render(conn, "new_password_token.html", error: nil)
+      Controller.render(conn, "new_password_token.html", error: nil)
     end
 
     @doc """
@@ -223,12 +247,12 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         Identity.request_password_reset(user)
       end
 
-      put_flash(
+      Controller.put_flash(
         conn,
         :info,
         "If your email is in our system, you will receive instructions to reset your password shortly."
       )
-      |> redirect(to: "/")
+      |> Controller.redirect(to: "/")
     end
 
     @doc """
@@ -252,7 +276,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @spec new_password(Conn.t(), Conn.params()) :: Conn.t()
     def new_password(conn, _params) do
       user = conn.assigns[@assign_password_reset_user]
-      render(conn, "new_password.html", changeset: Identity.request_password_change(user))
+
+      Controller.render(conn, "new_password.html",
+        changeset: Identity.request_password_change(user)
+      )
     end
 
     @doc """
@@ -288,14 +315,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       case Identity.reset_password(user, password_params) do
         {:ok, _} ->
-          routes = Module.concat(router_module(conn), Helpers)
+          routes = Module.concat(Controller.router_module(conn), Helpers)
 
           conn
-          |> put_flash(:info, "Password reset successfully.")
-          |> redirect(to: routes.identity_path(conn, :new_session))
+          |> Controller.put_flash(:info, "Password reset successfully.")
+          |> Controller.redirect(to: routes.identity_path(conn, :new_session))
 
         {:error, changeset} ->
-          render(conn, "new_password.html", changeset: changeset)
+          Controller.render(conn, "new_password.html", changeset: changeset)
       end
     end
 
@@ -306,13 +333,13 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       if user = Identity.get_user_by_password_token(token) do
         conn
-        |> assign(@assign_password_reset_user, user)
-        |> assign(:token, token)
+        |> Conn.assign(@assign_password_reset_user, user)
+        |> Conn.assign(:token, token)
       else
         conn
-        |> put_flash(:error, "Reset password link is invalid or it has expired.")
-        |> redirect(to: "/")
-        |> halt()
+        |> Controller.put_flash(:error, "Reset password link is invalid or it has expired.")
+        |> Controller.redirect(to: "/")
+        |> Conn.halt()
       end
     end
 
@@ -338,7 +365,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :email
     @spec new_email(Conn.t(), any) :: Conn.t()
     def new_email(conn, _params) do
-      render(conn, "new_email.html", changeset: Identity.create_email_changeset())
+      Controller.render(conn, "new_email.html", changeset: Identity.create_email_changeset())
     end
 
     @doc """
@@ -374,14 +401,17 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       case Identity.create_email(user, email, password) do
         :ok ->
-          routes = Module.concat(router_module(conn), Helpers)
+          routes = Module.concat(Controller.router_module(conn), Helpers)
 
           conn
-          |> put_flash(:info, "A link to confirm your email has been sent to the new address.")
-          |> redirect(to: routes.identity_path(conn, :new_email))
+          |> Controller.put_flash(
+            :info,
+            "A link to confirm your email has been sent to the new address."
+          )
+          |> Controller.redirect(to: routes.identity_path(conn, :new_email))
 
         {:error, changeset} ->
-          render(conn, "new_email.html", changeset: changeset)
+          Controller.render(conn, "new_email.html", changeset: changeset)
       end
     end
 
@@ -408,13 +438,13 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       case Identity.confirm_email(token) do
         {:ok, _email} ->
           conn
-          |> put_flash(:info, "Email address confirmed")
-          |> redirect(to: "/")
+          |> Controller.put_flash(:info, "Email address confirmed")
+          |> Controller.redirect(to: "/")
 
         {:error, _reason} ->
           conn
-          |> put_flash(:error, "Email confirmation link is invalid or it has expired")
-          |> redirect(to: "/")
+          |> Controller.put_flash(:error, "Email confirmation link is invalid or it has expired")
+          |> Controller.redirect(to: "/")
       end
     end
 
@@ -443,21 +473,21 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       case Identity.delete_email(user, email) do
         :ok ->
           conn
-          |> put_flash(:info, "Email address removed successfully")
-          |> redirect(to: "/")
+          |> Controller.put_flash(:info, "Email address removed successfully")
+          |> Controller.redirect(to: "/")
 
         {:error, :only_email} ->
           conn
-          |> put_flash(
+          |> Controller.put_flash(
             :error,
             "Unable to remove email address: accounts must have at least one valid email"
           )
-          |> redirect(to: "/")
+          |> Controller.redirect(to: "/")
 
         {:error, :not_found} ->
           conn
-          |> put_flash(:error, "Unable to remove email address: email not found")
-          |> redirect(to: "/")
+          |> Controller.put_flash(:error, "Unable to remove email address: email not found")
+          |> Controller.redirect(to: "/")
       end
     end
 
@@ -486,7 +516,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @spec new_user(Conn.t(), any) :: Conn.t()
     def new_user(conn, _params) do
       changeset = Identity.create_email_and_login_changeset()
-      render(conn, "new_user.html", changeset: changeset)
+      Controller.render(conn, "new_user.html", changeset: changeset)
     end
 
     @doc """
@@ -520,11 +550,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       case Identity.create_email_and_login(user_params) do
         {:ok, user} ->
           conn
-          |> put_flash(:info, "A link to confirm your email has been sent to your address.")
+          |> Controller.put_flash(
+            :info,
+            "A link to confirm your email has been sent to your address."
+          )
           |> Identity.Plug.log_in_and_redirect_user(user)
 
         {:error, changeset} ->
-          render(conn, "new_user.html", changeset: changeset)
+          Controller.render(conn, "new_user.html", changeset: changeset)
       end
     end
 
@@ -552,7 +585,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     def edit_password(conn, _params) do
       user = conn.assigns[:current_user]
       changeset = Identity.request_password_change(user)
-      render(conn, "edit_password.html", changeset: changeset)
+      Controller.render(conn, "edit_password.html", changeset: changeset)
     end
 
     @doc """
@@ -589,16 +622,16 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       case Identity.update_password(user, current_password, password_params) do
         {:ok, user} ->
-          routes = Module.concat(router_module(conn), Helpers)
+          routes = Module.concat(Controller.router_module(conn), Helpers)
 
           conn
-          |> put_flash(:info, "Password updated successfully.")
+          |> Controller.put_flash(:info, "Password updated successfully.")
           |> Identity.Plug.log_in_and_redirect_user(user,
             to: routes.identity_path(conn, :edit_password)
           )
 
         {:error, changeset} ->
-          render(conn, "edit_password.html", changeset: changeset)
+          Controller.render(conn, "edit_password.html", changeset: changeset)
       end
     end
   end

@@ -91,6 +91,25 @@ defmodule Identity.ControllerTest do
     end
   end
 
+  describe "delete_session/2" do
+    test "logs out a logged-in user", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/session")
+
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == "/"
+    end
+
+    test "ignores a logged out user", %{conn: conn} do
+      conn = delete(conn, "/session")
+
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == "/"
+    end
+  end
+
   describe "pending_2fa/2" do
     test "renders 2FA form", %{conn: conn} do
       user = Factory.insert(:user)
