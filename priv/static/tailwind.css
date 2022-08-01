@@ -1,0 +1,59 @@
+.id_wrapper {
+  @apply bg-white mx-auto my-8 max-w-md p-4 rounded shadow;
+}
+
+.id_form_title {
+  @apply font-semibold mb-4 text-slate-700 text-xl;
+}
+
+.id_form_subtitle {
+  @apply mb-4 text-sm;
+}
+
+.id_error_message {
+  @apply bg-red-100 mb-4 p-2 rounded text-sm;
+}
+
+.id_field {
+  @apply mb-4;
+}
+
+.id_text_label {
+  @apply block mb-1 text-slate-700 text-sm;
+}
+
+.id_text_input {
+  @apply focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded;
+}
+
+.id_field_checkbox {
+  @apply flex items-center;
+}
+
+.id_checkbox {
+  @apply focus:ring-indigo-500 focus:border-indigo-500 border-gray-400 rounded;
+}
+
+.id_checkbox_label {
+  @apply ml-2 text-slate-700 text-sm;
+}
+
+.id_wrapper .invalid-feedback {
+  @apply pl-4 text-red-600 text-sm;
+}
+
+.id_submit {
+  @apply text-right;
+}
+
+.id_submit_button {
+  @apply bg-indigo-600 px-2 py-1 rounded text-white;
+}
+
+.id_links {
+  @apply border-t border-t-slate-300 mt-4 pt-4 text-center text-sm;
+}
+
+.id_link {
+  @apply text-indigo-600 focus:text-indigo-400 focus:underline hover:underline;
+}
