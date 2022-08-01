@@ -20,7 +20,7 @@ if Code.ensure_loaded?(Phoenix.View) do
     def error_tag(form, field) do
       Enum.map(Keyword.get_values(form.errors, field), fn error ->
         content_tag(:span, translate_error(error),
-          class: "invalid-feedback",
+          class: "id_invalid_feedback",
           phx_feedback_for: input_id(form, field)
         )
       end)

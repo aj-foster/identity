@@ -1,5 +1,5 @@
 <div class="id_wrapper id_email_new">
-  <h2>Add email address</h2>
+  <h2 class="id_form_title">Add email address</h2>
 
   <.form
     let={f}
@@ -7,20 +7,20 @@
     action={routes(@conn).identity_path(@conn, :create_email)}
     as={:email}
   >
-    <div class="id_field">
-      <%= label(f, :email, "New email address") %>
-      <%= email_input(f, :email, required: true) %>
+    <div class="id_field id_field_text">
+      <%= label(f, :email, "New email address", class: "id_text_label") %>
+      <%= email_input(f, :email, required: true, class: "id_text_input") %>
       <%= error_tag(f, :email) %>
     </div>
 
-    <div class="id_field">
-      <%= label(f, :password, "Verify password") %>
-      <%= password_input(f, :password, required: true) %>
+    <div class="id_field id_field_text">
+      <%= label(f, :password, "Verify password", class: "id_text_label") %>
+      <%= password_input(f, :password, required: true, class: "id_text_input") %>
       <%= error_tag(f, :password) %>
     </div>
 
     <div class="id_submit">
-      <%= submit("Add email") %>
+      <%= submit("Add email", class: "id_submit_button") %>
     </div>
   </.form>
 </div>

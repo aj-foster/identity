@@ -1,42 +1,41 @@
 <div class="id_wrapper id_session_new">
-  <h2>Log in</h2>
+  <h2 class="id_form_title">Log in</h2>
 
-  <.form
-    let={f}
-    for={@conn}
-    action={routes(@conn).identity_path(@conn, :create_session)}
-    as={:session}
-  >
+  <.form let={f} for={:session} action={routes(@conn).identity_path(@conn, :create_session)}>
     <%= if @error do %>
-      <div class="alert alert-danger">
+      <div class="id_error_message">
         <p><%= @error %></p>
       </div>
     <% end %>
 
-    <div class="id_field">
-      <%= label(f, :email) %>
-      <%= email_input(f, :email, required: true) %>
+    <div class="id_field id_field_text">
+      <%= label(f, :email, class: "id_text_label") %>
+      <%= email_input(f, :email, required: true, class: "id_text_input") %>
     </div>
 
     <div class="id_field">
-      <%= label(f, :password) %>
-      <%= password_input(f, :password, required: true) %>
+      <%= label(f, :password, class: "id_text_label") %>
+      <%= password_input(f, :password, required: true, class: "id_text_input") %>
     </div>
 
-    <div class="id_field">
-      <%= label(f, :remember_me, "Keep me logged in for 60 days") %>
-      <%= checkbox(f, :remember_me) %>
+    <div class="id_field id_field_checkbox">
+      <%= checkbox(f, :remember_me, class: "id_checkbox") %>
+      <%= label(f, :remember_me, "Keep me logged in for 60 days", class: "id_checkbox_label") %>
     </div>
 
     <div class="id_submit">
-      <%= submit("Log in") %>
+      <%= submit("Log in", class: "id_submit_button") %>
     </div>
   </.form>
 
   <div class="id_links">
-    <%= link("Register", to: routes(@conn).identity_path(@conn, :new_user)) %> | <%= link(
+    <%= link("Register",
+      to: routes(@conn).identity_path(@conn, :new_user),
+      class: "id_link"
+    ) %> &bull; <%= link(
       "Forgot your password?",
-      to: routes(@conn).identity_path(@conn, :new_password_token)
+      to: routes(@conn).identity_path(@conn, :new_password_token),
+      class: "id_link"
     ) %>
   </div>
 </div>

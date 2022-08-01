@@ -1,6 +1,8 @@
 <div class="id_wrapper id_session_pending_2fa">
-  <h2>Two-Factor Authentication</h2>
-  <p>Enter the six-digit code from your device, or any of your eight-character backup codes.</p>
+  <h2 class="id_form_title">Two-Factor Authentication</h2>
+  <p class="id_form_subtitle">
+    Enter the six-digit code from your device, or any of your eight-character backup codes.
+  </p>
 
   <.form
     let={f}
@@ -9,24 +11,26 @@
     as={:session}
   >
     <%= if @error do %>
-      <div class="alert alert-danger">
+      <div class="id_error_message">
         <p><%= @error %></p>
       </div>
     <% end %>
 
-    <div class="id_field">
-      <%= label(f, :code) %>
-      <%= text_input(f, :code, required: true) %>
+    <div class="id_field id_field_text">
+      <%= label(f, :code, class: "id_text_label") %>
+      <%= text_input(f, :code, required: true, class: "id_text_input") %>
     </div>
 
     <div class="id_submit">
-      <%= submit("Log in") %>
+      <%= submit("Log in", class: "id_submit_button") %>
     </div>
   </.form>
 
   <div class="id_links">
-    | <%= link("Forgot your password?",
-      to: routes(@conn).identity_path(@conn, :new_password_token)
+    <%= link("Register", to: routes(@conn).identity_path(@conn, :new_user), class: "id_link") %> | <%= link(
+      "Forgot your password?",
+      to: routes(@conn).identity_path(@conn, :new_password_token),
+      class: "id_link"
     ) %>
   </div>
 </div>
