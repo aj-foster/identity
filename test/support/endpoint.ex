@@ -8,6 +8,10 @@ if Code.ensure_loaded?(Phoenix.Endpoint) do
       signing_salt: "tSfoAn16"
     ]
 
+    plug Plug.Parsers,
+      parsers: [:urlencoded, :multipart],
+      pass: ["*/*"]
+
     plug Plug.Session, @session_options
     plug Identity.Test.Router
   end
