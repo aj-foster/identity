@@ -146,42 +146,59 @@ defmodule Identity.Schema.BasicLogin do
     end
   end
 
-  @doc "Create a new OTP secret."
-  @spec generate_otp_secret_changeset(t) :: Changeset.t(t)
-  def generate_otp_secret_changeset(login) do
-    Changeset.change(login, %{otp_secret: NimbleTOTP.secret()})
-  end
-
-  @doc "Validate the given `code` matches the OTP secret about to be persisted."
-  @spec enable_2fa_changeset(Changeset.t(t), String.t()) :: Changeset.t(t)
-  def enable_2fa_changeset(login_changeset, code) do
-    login_changeset =
-      login_changeset
-      |> Changeset.put_change(:otp_code, code)
-      |> Changeset.validate_required([:otp_code])
-      |> Changeset.validate_format(:otp_code, ~r/^\d{6}$/, message: "should be a 6 digit number")
-
-    secret = Changeset.get_field(login_changeset, :otp_secret)
-
-    if login_changeset.valid? and not NimbleTOTP.valid?(secret, code) do
-      Changeset.add_error(login_changeset, :otp_code, "invalid code")
-    else
-      login_changeset
+  if Code.ensure_loaded?(NimbleTOTP) do
+    @doc "Create a new OTP secret."
+    @spec generate_otp_secret_changeset(t) :: Changeset.t(t)
+    def generate_otp_secret_changeset(login) do
+      Changeset.change(login, %{otp_secret: NimbleTOTP.secret()})
     end
+
+    @doc "Validate the given `code` matches the OTP secret about to be persisted."
+    @spec enable_2fa_changeset(Changeset.t(t), String.t()) :: Changeset.t(t)
+    def enable_2fa_changeset(login_changeset, code) do
+      login_changeset =
+        login_changeset
+        |> Changeset.put_change(:otp_code, code)
+        |> Changeset.validate_required([:otp_code])
+        |> Changeset.validate_format(:otp_code, ~r/^\d{6}$/, message: "should be a 6 digit number")
+
+      secret = Changeset.get_field(login_changeset, :otp_secret)
+
+      if login_changeset.valid? and not NimbleTOTP.valid?(secret, code) do
+        Changeset.add_error(login_changeset, :otp_code, "invalid code")
+      else
+        login_changeset
+      end
+    end
+
+    @doc "Verifies the OTP code against the saved secret."
+    @spec valid_otp_code?(t, binary) :: boolean
+    def valid_otp_code?(login, code)
+
+    def valid_otp_code?(
+          %__MODULE__{last_used_otp_at: timestamp, otp_secret: secret},
+          <<code::binary-size(6)>>
+        ) do
+      NimbleTOTP.valid?(secret, code, since: timestamp)
+    end
+
+    def valid_otp_code?(_, _), do: false
+  else
+    @doc "Create a new OTP secret. Requires NimbleTOTP dependency."
+    @spec generate_otp_secret_changeset(t) :: no_return
+    def generate_otp_secret_changeset(_login),
+      do: raise("NimbleTOTP is required for two-factor auth")
+
+    @doc "Validate the given `code` matches the OTP secret about to be persisted. Requires NimbleTOTP dependency."
+    @spec enable_2fa_changeset(Changeset.t(t), String.t()) :: no_return
+    def enable_2fa_changeset(_login_changeset, _code),
+      do: raise("NimbleTOTP is required for two-factor auth")
+
+    @doc "Verifies the OTP code against the saved secret. Requires NimbleTOTP dependency."
+    @spec valid_otp_code?(t, binary) :: no_return
+    def valid_otp_code?(login, code),
+      do: raise("NimbleTOTP is required for two-factor auth")
   end
-
-  @doc "Verifies the OTP code against the saved secret."
-  @spec valid_otp_code?(t, binary) :: boolean
-  def valid_otp_code?(login, code)
-
-  def valid_otp_code?(
-        %__MODULE__{last_used_otp_at: timestamp, otp_secret: secret},
-        <<code::binary-size(6)>>
-      ) do
-    NimbleTOTP.valid?(secret, code, since: timestamp)
-  end
-
-  def valid_otp_code?(_, _), do: false
 
   @doc "Require the presence of backup codes, even if some have been used."
   @spec ensure_backup_codes(Changeset.t(t)) :: Changeset.t(t)
