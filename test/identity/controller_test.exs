@@ -170,6 +170,22 @@ defmodule Identity.ControllerTest do
     end
   end
 
+  describe "new_2fa/2" do
+    test "renders 2FA form with a QR code", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user)
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> get("/user/2fa")
+
+      assert response = html_response(conn, 200)
+      assert response =~ "form action=\"/user/2fa\""
+      assert response =~ "svg"
+      assert response =~ "otpauth://"
+    end
+  end
+
   describe "new_password_token/2" do
     test "renders the reset password page", %{conn: conn} do
       conn = get(conn, "/password/new")

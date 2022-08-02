@@ -42,7 +42,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
                 :create_email,
                 :confirm_email,
                 :edit_password,
-                :update_password
+                :update_password,
+                :new_2fa,
+                :create_2fa,
+                :delete_2fa
               ]
 
     #
@@ -195,6 +198,70 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           error: "Invalid two-factor authentication code"
         )
       end
+    end
+
+    if Code.ensure_loaded?(NimbleTOTP) do
+      @doc """
+      Render a form for enabling 2FA.
+
+      Generating the two-factor secret requires the optional `NimbleTOTP` dependency, and displaying
+      a QR code requires the optional `EQRCode` dependency.
+
+      ## Incoming Params
+
+      This action has no incoming params.
+
+      ## Render
+
+      Renders `new_2fa.html` with the following assigns:
+
+        * `:changeset` (`Ecto.Changeset`): Changeset for enabling 2FA. Expects a field `code`.
+
+      """
+      @doc section: :mfa
+      @spec new_2fa(Conn.t(), any) :: Conn.t()
+      def new_2fa(conn, _params) do
+        user = conn.assigns[:current_user]
+
+        if Identity.enabled_2fa?(user) do
+          conn
+          |> Controller.put_flash(:info, "Two-factor authentication is already enabled")
+          |> Controller.redirect(to: "/")
+        else
+          changeset = Identity.enable_2fa_changeset(user)
+          otp_secret = Ecto.Changeset.get_field(changeset, :otp_secret)
+          otp_uri = NimbleTOTP.otpauth_uri("Identity:#{user.id}", otp_secret)
+
+          qr_code =
+            otp_uri
+            |> encode_qr_code()
+            |> Phoenix.HTML.raw()
+
+          Controller.render(conn, "new_2fa.html",
+            changeset: changeset,
+            qr_code: qr_code,
+            otp_uri: otp_uri
+          )
+        end
+      end
+
+      if Code.ensure_loaded?(EQRCode) do
+        @spec encode_qr_code(String.t()) :: String.t()
+        defp encode_qr_code(uri) do
+          uri
+          |> EQRCode.encode()
+          |> EQRCode.svg(width: 250)
+        end
+      else
+        @spec encode_qr_code(String.t()) :: String.t()
+        defp encode_qr_code(uri) do
+          "<em>QR Code Unavailable</em>"
+        end
+      end
+    else
+      @doc "Render a form for enabling 2FA. Requires optional `NimbleTOTP` dependency."
+      @spec new_2fa(Conn.t(), any) :: no_return
+      def new_2fa(_conn, _params), do: raise("NimbleTOTP is required for two-factor auth")
     end
 
     #

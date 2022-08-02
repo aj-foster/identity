@@ -1,0 +1,30 @@
+<div class="id_wrapper id_2fa_new">
+  <h2 class="id_form_title">Enable two-factor authentication</h2>
+  <p class="id_form_subtitle">
+    Use the QR code below to set up two-factor authentication in the application of your choice.
+    Then, verify the setup by inputting a code in the form below.
+  </p>
+
+  <div class="id_qr_code"><%= @qr_code %></div>
+
+  <div class="id_otp_uri">
+    <pre><code><%= @otp_uri %></code></pre>
+  </div>
+
+  <.form
+    let={f}
+    for={@changeset}
+    action={routes(@conn).identity_path(@conn, :create_2fa)}
+    as={:mfa}
+  >
+    <div class="id_field id_field_text">
+      <%= label(f, :code, "Verification code", class: "id_text_label") %>
+      <%= text_input(f, :code, required: true, class: "id_text_input") %>
+      <%= error_tag(f, :code) %>
+    </div>
+
+    <div class="id_submit">
+      <%= submit("Verify code", class: "id_submit_button") %>
+    </div>
+  </.form>
+</div>

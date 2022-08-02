@@ -40,6 +40,7 @@ defmodule Identity.MixProject do
     [
       {:bcrypt_elixir, "~> 3.0"},
       {:ecto_sql, "~> 3.0"},
+      {:eqrcode, "~> 0.1.10", optional: true},
       {:ex_doc, "~> 0.28", only: :dev},
       {:ex_machina, "~> 2.7.0", only: [:dev, :test]},
       {:jason, "~> 1.0", only: [:dev, :test]},
