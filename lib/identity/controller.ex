@@ -224,9 +224,11 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         user = conn.assigns[:current_user]
 
         if Identity.enabled_2fa?(user) do
+          routes = Module.concat(Controller.router_module(conn), Helpers)
+
           conn
           |> Controller.put_flash(:info, "Two-factor authentication is already enabled")
-          |> Controller.redirect(to: "/")
+          |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
         else
           changeset = Identity.enable_2fa_changeset(user)
           otp_secret = Ecto.Changeset.get_field(changeset, :otp_secret)

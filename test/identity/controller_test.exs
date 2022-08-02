@@ -177,12 +177,23 @@ defmodule Identity.ControllerTest do
       conn =
         conn
         |> Identity.Plug.log_in_user(user)
-        |> get("/user/2fa")
+        |> get("/user/2fa/new")
 
       assert response = html_response(conn, 200)
-      assert response =~ "form action=\"/user/2fa\""
+      assert response =~ "form action=\"/user/2fa/new\""
       assert response =~ "svg"
       assert response =~ "otpauth://"
+    end
+
+    test "redirects if 2FA already enabled", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user, otp_secret: "something")
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> get("/user/2fa/new")
+
+      assert redirected_to(conn) == "/user/2fa"
     end
   end
 

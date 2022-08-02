@@ -44,7 +44,10 @@ if Code.ensure_loaded?(Phoenix.Router) do
       get "/user/password", Identity.Controller, :edit_password, as: :identity
       put "/user/password", Identity.Controller, :update_password, as: :identity
 
-      get "/user/2fa", Identity.Controller, :new_2fa, as: :identity
+      get "/user/2fa/new", Identity.Controller, :new_2fa, as: :identity
+      post "/user/2fa/new", Identity.Controller, :create_2fa, as: :identity
+      get "/user/2fa", Identity.Controller, :show_2fa, as: :identity
+      delete "/user/2fa", Identity.Controller, :delete_2fa, as: :identity
     end
   end
 end
