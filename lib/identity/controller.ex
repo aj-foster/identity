@@ -43,6 +43,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
                 :confirm_email,
                 :edit_password,
                 :update_password,
+                :show_2fa,
                 :new_2fa,
                 :create_2fa,
                 :delete_2fa
@@ -200,6 +201,28 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       end
     end
 
+    @doc """
+    Display the current status of two-factor authentication for the current user.
+
+    ## Incoming Params
+
+    This action has no incoming params.
+
+    ## Render
+
+    Renders `show_2fa.html` with the following assigns:
+
+      * `:enabled?` (boolean): Whether 2FA is enabled for the current user.
+
+    """
+    @spec show_2fa(Conn.t(), any) :: Conn.t()
+    def show_2fa(conn, _params) do
+      user = conn.assigns[:current_user]
+      enabled? = Identity.enabled_2fa?(user)
+      codes_remaining = Identity.count_2fa_backup_codes(user)
+      render(conn, "show_2fa.html", enabled?: enabled?, codes_remaining: codes_remaining)
+    end
+
     if Code.ensure_loaded?(NimbleTOTP) do
       @doc """
       Render a form for enabling 2FA.
@@ -256,7 +279,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         end
       else
         @spec encode_qr_code(String.t()) :: String.t()
-        defp encode_qr_code(uri) do
+        defp encode_qr_code(_uri) do
           "<em>QR Code Unavailable</em>"
         end
       end

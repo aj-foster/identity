@@ -170,6 +170,31 @@ defmodule Identity.ControllerTest do
     end
   end
 
+  describe "show_2fa/2" do
+    test "renders informational page with 2FA status", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user)
+
+      conn
+      |> Identity.Plug.log_in_user(user)
+      |> get("/user/2fa")
+      |> html_response(200)
+      |> Kernel.=~("disabled")
+      |> assert
+
+      changeset = Identity.enable_2fa_changeset(user)
+      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
+      otp = NimbleTOTP.verification_code(otp_secret)
+      Identity.enable_2fa(changeset, otp)
+
+      conn
+      |> Identity.Plug.log_in_user(user)
+      |> get("/user/2fa")
+      |> html_response(200)
+      |> Kernel.=~("enabled")
+      |> assert
+    end
+  end
+
   describe "new_2fa/2" do
     test "renders 2FA form with a QR code", %{conn: conn, user: user} do
       Factory.insert(:basic_login, user: user)

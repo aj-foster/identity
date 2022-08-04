@@ -57,3 +57,23 @@
 .id_link {
   @apply text-indigo-600 focus:text-indigo-400 focus:underline hover:underline;
 }
+
+.id_info {
+  @apply mb-4 text-sm;
+}
+
+.id_actions {
+  @apply text-right;
+}
+
+.id_action_primary {
+  @apply bg-indigo-600 ml-2 px-2 py-1 rounded text-white;
+}
+
+.id_action_secondary {
+  @apply border border-indigo-600 ml-2 px-2 py-1 rounded text-indigo-600;
+}
+
+.id_divider {
+  @apply border-b border-b-slate-300 mb-4 pb-4;
+}
