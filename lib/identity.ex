@@ -355,6 +355,27 @@ defmodule Identity do
   end
 
   @doc """
+  Count the number of unused 2FA backup codes remaining for the given `user`.
+
+  Generate a new set of codes (and invalidate the existing codes) using
+  `regenerate_2fa_backup_codes/1`.
+
+  ## Examples
+
+      iex> Identity.count_2fa_backup_codes(user)
+      9
+
+  """
+  @doc section: :mfa
+  @spec count_2fa_backup_codes(User.t()) :: non_neg_integer
+  def count_2fa_backup_codes(user) do
+    case get_login_by_user(user) do
+      %BasicLogin{backup_codes: codes} -> Enum.count(codes, fn code -> is_nil(code.used_at) end)
+      nil -> 0
+    end
+  end
+
+  @doc """
   Regenerate 2FA backup codes for the given `user`.
 
   All previous backup codes (if any) will no longer be valid.

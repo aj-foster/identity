@@ -428,6 +428,17 @@ defmodule IdentityTest do
     end
   end
 
+  describe "count_2fa_backup_codes/1" do
+    test "counts remaining backup codes" do
+      now = DateTime.utc_now()
+      user = Factory.insert(:user)
+      codes = [%BasicLogin.BackupCode{used_at: nil}, %BasicLogin.BackupCode{used_at: now}]
+      Factory.insert(:basic_login, user: user, backup_codes: codes)
+
+      assert Identity.count_2fa_backup_codes(user) == 1
+    end
+  end
+
   describe "regenerate_2fa_backup_codes/1" do
     setup do
       user = Factory.insert(:user)
