@@ -111,8 +111,7 @@ defmodule Identity do
   @doc section: :login
   @spec correct_password?(User.t(), String.t()) :: boolean
   def correct_password?(%@user{} = user, password) when is_binary(password) do
-    BasicLogin.get_login_by_user_query(user)
-    |> repo().one()
+    get_login_by_user(user)
     |> BasicLogin.correct_password?(password)
   end
 
@@ -217,8 +216,8 @@ defmodule Identity do
   @doc section: :login
   @spec request_password_change(User.t(), map) :: Ecto.Changeset.t()
   def request_password_change(%@user{} = user, attrs \\ %{}) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
-    BasicLogin.password_changeset(basic_login, attrs, hash_password: false)
+    get_login_by_user(user)
+    |> BasicLogin.password_changeset(attrs, hash_password: false)
   end
 
   @doc """
@@ -234,10 +233,9 @@ defmodule Identity do
   @spec update_password(User.t(), String.t(), map) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_password(%@user{} = user, current_password, attrs \\ %{}) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
-
     login_changeset =
-      BasicLogin.password_changeset(basic_login, attrs)
+      get_login_by_user(user)
+      |> BasicLogin.password_changeset(attrs)
       |> BasicLogin.validate_current_password(current_password)
 
     session_query = Session.list_by_user_query(user)
@@ -273,8 +271,7 @@ defmodule Identity do
   @doc section: :mfa
   @spec enable_2fa_changeset(User.t()) :: Ecto.Changeset.t(BasicLogin.t())
   def enable_2fa_changeset(user) do
-    BasicLogin.get_login_by_user_query(user)
-    |> repo().one()
+    get_login_by_user(user)
     |> BasicLogin.generate_otp_secret_changeset()
   end
 
@@ -318,7 +315,7 @@ defmodule Identity do
   @doc section: :mfa
   @spec enabled_2fa?(User.t()) :: boolean
   def enabled_2fa?(user) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
+    basic_login = get_login_by_user(user)
     not is_nil(basic_login) and not is_nil(basic_login.otp_secret)
   end
 
@@ -339,7 +336,7 @@ defmodule Identity do
   @doc section: :mfa
   @spec valid_2fa?(User.t(), String.t()) :: boolean
   def valid_2fa?(user, code) do
-    basic_login = BasicLogin.get_login_by_user_query(user) |> repo().one()
+    basic_login = get_login_by_user(user)
 
     cond do
       BasicLogin.valid_otp_code?(basic_login, code) ->
@@ -372,8 +369,7 @@ defmodule Identity do
   @spec regenerate_2fa_backup_codes(User.t()) ::
           {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
   def regenerate_2fa_backup_codes(user) do
-    BasicLogin.get_login_by_user_query(user)
-    |> repo().one()
+    get_login_by_user(user)
     |> Ecto.Changeset.change()
     |> BasicLogin.regenerate_backup_codes()
     |> repo().update()
@@ -743,5 +739,23 @@ defmodule Identity do
     |> repo().delete_all()
 
     :ok
+  end
+
+  #
+  # Helpers
+  #
+
+  @spec get_login_by_user(User.t()) :: BasicLogin.t() | nil
+  defp get_login_by_user(%User{login: %BasicLogin{} = login} = user) do
+    %BasicLogin{login | user: user}
+  end
+
+  defp get_login_by_user(%User{} = user) do
+    BasicLogin.get_login_by_user_query(user)
+    |> repo().one()
+    |> case do
+      %BasicLogin{} = login -> %BasicLogin{login | user: user}
+      nil -> nil
+    end
   end
 end
