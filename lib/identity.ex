@@ -276,22 +276,23 @@ defmodule Identity do
   end
 
   @doc """
-  Enable 2FA for the login changeset returned by `enable_2fa_changeset/1`.
+  Enable 2FA for the given `user` and `otp_secret`.
 
-  This function will first ensure the supplied 6-digit code is valid. If successful, a set of 10
-  backup codes will be returned.
+  This function will first ensure the supplied 6-digit code is valid compared to the secret. If
+  successful, a set of 10 backup codes will be returned.
 
   ## Examples
 
-      iex> Identity.enable_2fa(login_changeset, "123456")
+      iex> Identity.enable_2fa(user, <<...>>, "123456")
       {:ok, ["abcd1234", ...]}
 
   """
   @doc section: :mfa
-  @spec enable_2fa(Ecto.Changeset.t(BasicLogin.t()), String.t()) ::
+  @spec enable_2fa(User.t(), String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
-  def enable_2fa(login_changeset, code) do
-    BasicLogin.enable_2fa_changeset(login_changeset, code)
+  def enable_2fa(user, secret, code) do
+    get_login_by_user(user)
+    |> BasicLogin.enable_2fa_changeset(secret, code)
     |> BasicLogin.ensure_backup_codes()
     |> repo().update()
     |> case do

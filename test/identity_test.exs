@@ -340,18 +340,18 @@ defmodule IdentityTest do
       %{changeset: changeset, user: user}
     end
 
-    test "validates required otp", %{changeset: changeset} do
-      {:error, changeset} = Identity.enable_2fa(changeset, "")
+    test "validates required otp", %{changeset: changeset, user: user} do
+      {:error, changeset} = Identity.enable_2fa(user, changeset.changes.otp_secret, "")
       assert %{otp_code: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "validates otp as 6 digits number", %{changeset: changeset} do
-      {:error, changeset} = Identity.enable_2fa(changeset, "1234567")
+    test "validates otp as 6 digits number", %{changeset: changeset, user: user} do
+      {:error, changeset} = Identity.enable_2fa(user, changeset.changes.otp_secret, "1234567")
       assert %{otp_code: ["should be a 6 digit number"]} = errors_on(changeset)
     end
 
-    test "validates otp against the secret", %{changeset: changeset} do
-      {:error, changeset} = Identity.enable_2fa(changeset, "123456")
+    test "validates otp against the secret", %{changeset: changeset, user: user} do
+      {:error, changeset} = Identity.enable_2fa(user, changeset.changes.otp_secret, "123456")
       assert %{otp_code: ["invalid code"]} = errors_on(changeset)
     end
 
@@ -359,7 +359,7 @@ defmodule IdentityTest do
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
 
-      assert {:ok, codes} = Identity.enable_2fa(changeset, otp)
+      assert {:ok, codes} = Identity.enable_2fa(user, otp_secret, otp)
       assert length(codes) == 10
       assert Enum.all?(codes, &(byte_size(&1) == 8))
       assert Enum.all?(codes, &(:binary.first(&1) in ?A..?Z))
@@ -381,7 +381,7 @@ defmodule IdentityTest do
       changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(changeset, otp)
+      Identity.enable_2fa(user, otp_secret, otp)
 
       assert Identity.enabled_2fa?(user)
     end
@@ -399,7 +399,7 @@ defmodule IdentityTest do
       changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      {:ok, backup_codes} = Identity.enable_2fa(changeset, otp)
+      {:ok, backup_codes} = Identity.enable_2fa(user, otp_secret, otp)
 
       %{backup_codes: backup_codes, code: otp, user: user}
     end
@@ -447,7 +447,7 @@ defmodule IdentityTest do
       changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      codes = Identity.enable_2fa(changeset, otp)
+      codes = Identity.enable_2fa(user, otp_secret, otp)
 
       %{codes: codes, user: user}
     end
@@ -467,7 +467,7 @@ defmodule IdentityTest do
       changeset = Identity.enable_2fa_changeset(user)
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(changeset, otp)
+      Identity.enable_2fa(user, otp_secret, otp)
 
       %{user: user}
     end

@@ -154,15 +154,14 @@ defmodule Identity.Schema.BasicLogin do
     end
 
     @doc "Validate the given `code` matches the OTP secret about to be persisted."
-    @spec enable_2fa_changeset(Changeset.t(t), String.t()) :: Changeset.t(t)
-    def enable_2fa_changeset(login_changeset, code) do
+    @spec enable_2fa_changeset(t, binary, String.t()) :: Changeset.t(t)
+    def enable_2fa_changeset(login, secret, code) do
       login_changeset =
-        login_changeset
+        login
+        |> Changeset.change(%{otp_secret: secret})
         |> Changeset.put_change(:otp_code, code)
         |> Changeset.validate_required([:otp_code])
         |> Changeset.validate_format(:otp_code, ~r/^\d{6}$/, message: "should be a 6 digit number")
-
-      secret = Changeset.get_field(login_changeset, :otp_secret)
 
       if login_changeset.valid? and not NimbleTOTP.valid?(secret, code) do
         Changeset.add_error(login_changeset, :otp_code, "invalid code")
