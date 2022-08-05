@@ -2,12 +2,8 @@
   @apply bg-white mx-auto my-8 max-w-md p-4 rounded shadow;
 }
 
-.id_form_title {
+.id_title {
   @apply font-semibold mb-4 text-slate-700 text-xl;
-}
-
-.id_form_subtitle {
-  @apply mb-4 text-sm;
 }
 
 .id_error_message {

@@ -1,5 +1,5 @@
 <div class="id_wrapper id_session_new">
-  <h2 class="id_form_title">Log in</h2>
+  <h2 class="id_title">Log in</h2>
 
   <.form let={f} for={:session} action={routes(@conn).identity_path(@conn, :create_session)}>
     <%= if @error do %>
