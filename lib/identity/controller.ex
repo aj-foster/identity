@@ -83,9 +83,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         %{
           "session" => %{
-            "email" => email,
-            "password" => password,
-            "remember_me" => remember_me  # Optional, "true" when desired
+            "email" => string,
+            "password" => string,
+            "remember_me" => "true" | "false"  # Optional, default "false"
           }
         }
 
@@ -172,7 +172,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         %{
           "session" => %{
-            "code" => code  # Either 2FA code or backup code
+            "code" => string  # Either 2FA code or backup code
           }
         }
 
@@ -324,7 +324,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         %{
           "password_token" => %{
-            "email" => email
+            "email" => string
           }
         }
 
@@ -354,7 +354,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     ## Incoming Params
 
         %{
-          "token" => token  # Password reset token, generally included as a URL param
+          "token" => string  # Password reset token, generally included as a URL param
         }
 
     ## Render
@@ -381,10 +381,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     ## Incoming Params
 
         %{
-          "token" => token,  # Password reset token, generally included as a URL param
+          "token" => string,  # Password reset token, generally included as a URL param
           "password" => %{
-            "password" => password,
-            "password_confirmation" => password
+            "password" => string,
+            "password_confirmation" => string
           }
         }
 
@@ -468,8 +468,8 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         %{
           "email" => %{
-            "email" => email,
-            "password" => password  # For verification
+            "email" => string,
+            "password" => string  # For verification
           }
         }
 
@@ -514,7 +514,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     ## Incoming Params
 
         %{
-          "token" => token  # Email confirmation token, generally included as a URL param
+          "token" => string  # Email confirmation token, generally included as a URL param
         }
 
     ## Success Response
@@ -547,7 +547,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     ## Incoming Params
 
         %{
-          "email" => email
+          "email" => string
         }
 
     ## Success Response
@@ -619,8 +619,8 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         %{
           "user" => %{
-            "email" => email,
-            "password" => password
+            "email" => string,
+            "password" => string
           }
         }
 
@@ -688,9 +688,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         %{
           "password" => %{
-            "current_password" => current_password,
-            "password" => password,
-            "password_confirmation" => password
+            "current_password" => string,
+            "password" => string,
+            "password_confirmation" => string
           }
         }
 
