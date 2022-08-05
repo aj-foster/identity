@@ -269,30 +269,33 @@ defmodule Identity do
 
   """
   @doc section: :mfa
-  @spec enable_2fa_changeset(User.t()) :: Ecto.Changeset.t(BasicLogin.t())
-  def enable_2fa_changeset(user) do
-    get_login_by_user(user)
-    |> BasicLogin.generate_otp_secret_changeset()
+  @spec enable_2fa_changeset :: Ecto.Changeset.t(BasicLogin.otp_secret_and_code_data())
+  def enable_2fa_changeset do
+    Changeset.otp_secret_and_code()
   end
 
   @doc """
-  Enable 2FA for the given `user` and `otp_secret`.
+  Enable 2FA for the given `user`.
 
-  This function will first ensure the supplied 6-digit code is valid compared to the secret. If
-  successful, a set of 10 backup codes will be returned.
+  This function will first ensure the supplied 6-digit `otp_code` is valid compared to the
+  `otp_secret`. If successful, a set of 10 backup codes will be returned.
+
+  ## Changeset
+
+  In case of error, this function returns a schemaless changeset with `:otp_code` and `:otp_secret`
+  fields. Use `enable_2fa_changeset/0` to get a blank copy of this changeset for rendering a form.
 
   ## Examples
 
-      iex> Identity.enable_2fa(user, <<...>>, "123456")
+      iex> Identity.enable_2fa(user, %{"otp_secret" => <<...>>, "otp_code" => "123456"})
       {:ok, ["abcd1234", ...]}
 
   """
   @doc section: :mfa
-  @spec enable_2fa(User.t(), String.t(), String.t()) ::
-          {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
-  def enable_2fa(user, secret, code) do
+  @spec enable_2fa(User.t(), map) :: {:ok, [String.t()]} | {:error, Ecto.Changeset.t()}
+  def enable_2fa(user, attrs) do
     get_login_by_user(user)
-    |> BasicLogin.enable_2fa_changeset(secret, code)
+    |> BasicLogin.enable_2fa_changeset(attrs)
     |> BasicLogin.ensure_backup_codes()
     |> repo().update()
     |> case do

@@ -74,10 +74,10 @@ defmodule Identity.ControllerTest do
       password: password,
       user: user
     } do
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(user, otp_secret, otp)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       params = %{
         "session" => %{"email" => email, "password" => password, "remember_me" => "true"}
@@ -132,10 +132,10 @@ defmodule Identity.ControllerTest do
     end
 
     test "accepts a valid 2FA code", %{conn: conn, user: user} do
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(user, otp_secret, otp)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       params = %{"session" => %{"code" => otp}}
 
@@ -151,10 +151,10 @@ defmodule Identity.ControllerTest do
     end
 
     test "rejects an invalid 2FA code", %{conn: conn, user: user} do
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(user, otp_secret, otp)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       params = %{"session" => %{"code" => "000000"}}
 
@@ -181,10 +181,10 @@ defmodule Identity.ControllerTest do
       |> Kernel.=~("disabled")
       |> assert
 
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(user, otp_secret, otp)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       conn
       |> Identity.Plug.log_in_user(user)

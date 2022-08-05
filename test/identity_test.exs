@@ -317,7 +317,7 @@ defmodule IdentityTest do
     end
   end
 
-  describe "enable_2fa_changeset/1" do
+  describe "enable_2fa_changeset/0" do
     setup do
       user = Factory.insert(:user)
       Factory.insert(:basic_login, user: user)
@@ -325,8 +325,8 @@ defmodule IdentityTest do
       %{user: user}
     end
 
-    test "returns a changeset", %{user: user} do
-      assert %Ecto.Changeset{} = changeset = Identity.enable_2fa_changeset(user)
+    test "returns a changeset" do
+      assert %Ecto.Changeset{} = changeset = Identity.enable_2fa_changeset()
       assert Ecto.Changeset.get_change(changeset, :otp_secret)
     end
   end
@@ -335,31 +335,31 @@ defmodule IdentityTest do
     setup do
       user = Factory.insert(:user)
       Factory.insert(:basic_login, user: user)
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
+      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
 
-      %{changeset: changeset, user: user}
+      %{otp_secret: otp_secret, user: user}
     end
 
-    test "validates required otp", %{changeset: changeset, user: user} do
-      {:error, changeset} = Identity.enable_2fa(user, changeset.changes.otp_secret, "")
+    test "validates required otp", %{otp_secret: otp_secret, user: user} do
+      {:error, changeset} = Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: ""})
       assert %{otp_code: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "validates otp as 6 digits number", %{changeset: changeset, user: user} do
-      {:error, changeset} = Identity.enable_2fa(user, changeset.changes.otp_secret, "1234567")
+    test "validates otp as 6 digits number", %{otp_secret: secret, user: user} do
+      {:error, changeset} = Identity.enable_2fa(user, %{otp_secret: secret, otp_code: "1234567"})
       assert %{otp_code: ["should be a 6 digit number"]} = errors_on(changeset)
     end
 
-    test "validates otp against the secret", %{changeset: changeset, user: user} do
-      {:error, changeset} = Identity.enable_2fa(user, changeset.changes.otp_secret, "123456")
+    test "validates otp against the secret", %{otp_secret: secret, user: user} do
+      {:error, changeset} = Identity.enable_2fa(user, %{otp_secret: secret, otp_code: "123456"})
       assert %{otp_code: ["invalid code"]} = errors_on(changeset)
     end
 
-    test "creates OTP settings and backup codes", %{changeset: changeset, user: user} do
-      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
+    test "creates OTP settings and backup codes", %{otp_secret: otp_secret, user: user} do
       otp = NimbleTOTP.verification_code(otp_secret)
 
-      assert {:ok, codes} = Identity.enable_2fa(user, otp_secret, otp)
+      assert {:ok, codes} = Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
       assert length(codes) == 10
       assert Enum.all?(codes, &(byte_size(&1) == 8))
       assert Enum.all?(codes, &(:binary.first(&1) in ?A..?Z))
@@ -378,10 +378,10 @@ defmodule IdentityTest do
     end
 
     test "returns true when 2FA is enabled", %{user: user} do
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(user, otp_secret, otp)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       assert Identity.enabled_2fa?(user)
     end
@@ -396,10 +396,10 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
       Factory.insert(:basic_login, user: user)
 
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      {:ok, backup_codes} = Identity.enable_2fa(user, otp_secret, otp)
+      {:ok, backup_codes} = Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       %{backup_codes: backup_codes, code: otp, user: user}
     end
@@ -444,10 +444,10 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
       Factory.insert(:basic_login, user: user)
 
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      codes = Identity.enable_2fa(user, otp_secret, otp)
+      {:ok, codes} = Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       %{codes: codes, user: user}
     end
@@ -464,10 +464,10 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
       Factory.insert(:basic_login, user: user)
 
-      changeset = Identity.enable_2fa_changeset(user)
+      changeset = Identity.enable_2fa_changeset()
       otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
       otp = NimbleTOTP.verification_code(otp_secret)
-      Identity.enable_2fa(user, otp_secret, otp)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
 
       %{user: user}
     end

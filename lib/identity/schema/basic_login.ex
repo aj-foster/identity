@@ -26,7 +26,7 @@ defmodule Identity.Schema.BasicLogin do
           last_active_at: DateTime.t(),
           last_used_otp_at: DateTime.t() | nil,
           otp_code: String.t() | nil,
-          otp_secret: String.t() | nil,
+          otp_secret: binary | nil,
           password: String.t() | nil,
           updated_at: DateTime.t(),
           user_id: Ecto.UUID.t(),
@@ -35,6 +35,13 @@ defmodule Identity.Schema.BasicLogin do
 
   @typedoc "Dataset with a single password field, such as during registration."
   @type password_data :: %{:password => String.t(), optional(any) => any}
+
+  @typedoc "Dataset with an OTP secret and verification code, as when enabling 2FA."
+  @type otp_secret_and_code_data :: %{
+          :otp_code => String.t(),
+          :otp_secret => binary,
+          optional(any) => any
+        }
 
   @derive {Inspect, except: [:password, :otp_secret]}
   @foreign_key_type :binary_id
@@ -81,6 +88,21 @@ defmodule Identity.Schema.BasicLogin do
     |> validate_password(opts)
   end
 
+  @doc """
+  Validates the password and optionally hashes it for secure storage.
+
+  Requires the password to be present and between 12 and 80 characters long.
+
+  ## Options
+
+    * `:hash_password` - Hashes the password so it can be stored securely
+      in the database and ensures the password field is cleared to prevent
+      leaks in the logs. If password hashing is not needed and clearing the
+      password field is not desired (like when using this changeset for
+      validations on a LiveView form), this option can be set to `false`.
+      Defaults to `true`.
+
+  """
   @spec validate_password(Changeset.t(password_data), Keyword.t()) :: Changeset.t(password_data)
   def validate_password(changeset, opts) do
     changeset
@@ -154,19 +176,34 @@ defmodule Identity.Schema.BasicLogin do
     end
 
     @doc "Validate the given `code` matches the OTP secret about to be persisted."
-    @spec enable_2fa_changeset(t, binary, String.t()) :: Changeset.t(t)
-    def enable_2fa_changeset(login, secret, code) do
-      login_changeset =
-        login
-        |> Changeset.change(%{otp_secret: secret})
-        |> Changeset.put_change(:otp_code, code)
-        |> Changeset.validate_required([:otp_code])
+    @spec enable_2fa_changeset(t, map) :: Changeset.t(t)
+    def enable_2fa_changeset(login, attrs) do
+      login
+      |> Changeset.cast(attrs, [:otp_code, :otp_secret])
+      |> validate_otp_code()
+    end
+
+    @doc """
+    Validate the OTP verification code against the secret.
+
+    Requires both `otp_code` and `otp_secret` to be present, `otp_code` to be a 6-digit number, and
+    for the code to be valid against the secret.
+    """
+    @spec validate_otp_code(Changeset.t(otp_secret_and_code_data)) ::
+            Changeset.t(otp_secret_and_code_data)
+    def validate_otp_code(changeset) do
+      changeset =
+        changeset
+        |> Changeset.validate_required([:otp_code, :otp_secret])
         |> Changeset.validate_format(:otp_code, ~r/^\d{6}$/, message: "should be a 6 digit number")
 
-      if login_changeset.valid? and not NimbleTOTP.valid?(secret, code) do
-        Changeset.add_error(login_changeset, :otp_code, "invalid code")
-      else
-        login_changeset
+      code = Changeset.get_field(changeset, :otp_code)
+      secret = Changeset.get_field(changeset, :otp_secret)
+
+      cond do
+        not changeset.valid? -> changeset
+        NimbleTOTP.valid?(secret, code) -> changeset
+        true -> Changeset.add_error(changeset, :otp_code, "invalid code")
       end
     end
 
@@ -191,6 +228,11 @@ defmodule Identity.Schema.BasicLogin do
     @doc "Validate the given `code` matches the OTP secret about to be persisted. Requires NimbleTOTP dependency."
     @spec enable_2fa_changeset(Changeset.t(t), String.t()) :: no_return
     def enable_2fa_changeset(_login_changeset, _code),
+      do: raise("NimbleTOTP is required for two-factor auth")
+
+    @doc "Validate the given `code` matches the OTP secret about to be persisted. Requires NimbleTOTP dependency."
+    @spec validate_otp_code(Changeset.t(otp_secret_and_code_data)) :: no_return
+    def validate_otp_code(_changeset),
       do: raise("NimbleTOTP is required for two-factor auth")
 
     @doc "Verifies the OTP code against the saved secret. Requires NimbleTOTP dependency."

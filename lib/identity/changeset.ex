@@ -27,9 +27,9 @@ defmodule Identity.Changeset do
   @doc """
   Changeset for inserting a new `Identity.Schema.Email` and `Identity.Schema.BasicLogin` at once.
 
-  This field operates on `t:email_password_data/0` and performs all of the relevant validation on
-  each the `:email` and `:password` field. See `Identity.Schema.BasicLogin.validate_password/2` and
-  `Identity.Schema.Email.validate_email/1` for more information.
+  This changeset operates on `t:email_password_data/0` and performs all of the relevant validation
+  on each the `:email` and `:password` field. See `Identity.Schema.BasicLogin.validate_password/2`
+  and `Identity.Schema.Email.validate_email/1` for more information.
   """
   @spec email_and_password(map) :: Ecto.Changeset.t(email_password_data)
   def email_and_password(attrs \\ %{}) do
@@ -37,5 +37,21 @@ defmodule Identity.Changeset do
     |> Changeset.cast(attrs, [:email, :password])
     |> BasicLogin.validate_password(hash_password: false)
     |> Email.validate_email()
+  end
+
+  @doc """
+  Changeset for enabling 2FA on an `Identity.Schema.BasicLogin`.
+
+  This changeset operates on `t:BasicLogin.otp_secret_and_code_data/0` and ensures the verification
+  code is valid against the secret. If a secret was not supplied in the attributes, a new one is
+  generated. See `Identity.Schema.BasicLogin.validate_otp_code/1` for more information.
+  """
+  @spec otp_secret_and_code(map) :: Ecto.Changeset.t(BasicLogin.otp_secret_and_code_data())
+  def otp_secret_and_code(attrs \\ %{}) do
+    attrs = Map.put_new_lazy(attrs, :otp_secret, &NimbleTOTP.secret/0)
+
+    {%{}, %{otp_code: :string, otp_secret: :binary}}
+    |> Changeset.cast(attrs, [:otp_code, :otp_secret])
+    |> BasicLogin.validate_otp_code()
   end
 end

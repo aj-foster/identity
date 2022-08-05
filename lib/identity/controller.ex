@@ -253,7 +253,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           |> Controller.put_flash(:info, "Two-factor authentication is already enabled")
           |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
         else
-          changeset = Identity.enable_2fa_changeset(user)
+          changeset = Identity.enable_2fa_changeset()
           otp_secret = Ecto.Changeset.get_field(changeset, :otp_secret)
           otp_uri = NimbleTOTP.otpauth_uri("Identity:#{user.id}", otp_secret)
 
@@ -285,6 +285,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       end
     else
       @doc "Render a form for enabling 2FA. Requires optional `NimbleTOTP` dependency."
+      @doc section: :mfa
       @spec new_2fa(Conn.t(), any) :: no_return
       def new_2fa(_conn, _params), do: raise("NimbleTOTP is required for two-factor auth")
     end
