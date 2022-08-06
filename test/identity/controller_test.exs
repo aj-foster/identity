@@ -222,6 +222,88 @@ defmodule Identity.ControllerTest do
     end
   end
 
+  describe "create_2fa/2" do
+    test "redirects if 2FA already enabled", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user, otp_secret: "something")
+      params = %{"mfa" => %{"otp_code" => "", "otp_secret" => ""}}
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> post("/user/2fa/new", params)
+
+      assert redirected_to(conn) == "/user/2fa"
+    end
+
+    test "enables 2FA and shows backup codes", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user)
+      otp_secret = NimbleTOTP.secret()
+      otp_code = NimbleTOTP.verification_code(otp_secret)
+
+      params = %{
+        "mfa" => %{
+          "otp_code" => otp_code,
+          "otp_secret" => Base.encode32(otp_secret, padding: false)
+        }
+      }
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> post("/user/2fa/new", params)
+
+      assert html_response(conn, 200) =~ "store these backup codes"
+      assert Identity.enabled_2fa?(user)
+    end
+
+    test "rejects an invalid verification code", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user)
+      otp_secret = NimbleTOTP.secret()
+
+      params = %{
+        "mfa" => %{
+          "otp_code" => "000000",
+          "otp_secret" => Base.encode32(otp_secret, padding: false)
+        }
+      }
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> post("/user/2fa/new", params)
+
+      assert html_response(conn, 200) =~ "Use the QR code below"
+      assert get_flash(conn, :error) =~ "code invalid"
+      refute Identity.enabled_2fa?(user)
+    end
+  end
+
+  describe "delete_2fa/2" do
+    test "disables 2FA for the current user", %{conn: conn, user: user} do
+      Factory.insert(:basic_login, user: user, otp_secret: "something")
+      assert Identity.enabled_2fa?(user)
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/user/2fa")
+
+      assert redirected_to(conn) == "/user/2fa"
+      assert get_flash(conn, :info) =~ "disabled"
+      refute Identity.enabled_2fa?(user)
+    end
+
+    test "redirects if the user does not have a login", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> delete("/user/2fa")
+
+      assert redirected_to(conn) == "/user/2fa"
+      assert get_flash(conn, :error) =~ "not found"
+    end
+  end
+
   describe "new_password_token/2" do
     test "renders the reset password page", %{conn: conn} do
       conn = get(conn, "/password/new")

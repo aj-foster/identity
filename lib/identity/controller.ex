@@ -46,7 +46,8 @@ if Code.ensure_loaded?(Phoenix.Controller) do
                 :show_2fa,
                 :new_2fa,
                 :create_2fa,
-                :delete_2fa
+                :delete_2fa,
+                :regenerate_2fa
               ]
 
     #
@@ -238,7 +239,16 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       Renders `new_2fa.html` with the following assigns:
 
-        * `:changeset` (`Ecto.Changeset`): Changeset for enabling 2FA. Expects a field `code`.
+        * `:changeset` (`Ecto.Changeset`): Changeset for enabling 2FA. Expects two fields,
+          `otp_code` with a verification code and `otp_secret` with the base-32 encoded (no padding)
+          secret used to generate the QR code.
+
+        * `:otp_uri` (string): OTP setup URI.
+
+        * `:otp_secret` (string): Base-32 encoded (no padding) OTP secret, to be returned as a
+          hidden input along with the verification code.
+
+        * `:qr_code` (HTML raw): OTP setup QR code, encoded as an SVG using `Phoenix.HTML.raw/1`.
 
       """
       @doc section: :mfa
@@ -264,9 +274,131 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
           Controller.render(conn, "new_2fa.html",
             changeset: changeset,
-            qr_code: qr_code,
-            otp_uri: otp_uri
+            otp_uri: otp_uri,
+            otp_secret: Base.encode32(otp_secret, padding: false),
+            qr_code: qr_code
           )
+        end
+      end
+
+      @doc """
+      Enable 2FA for the current user.
+
+      ## Incoming Params
+
+      This action requires knowledge of the original OTP secret that was used to generate a QR
+      code or OTP URI for the user. This is most likely passed back to the controller using a
+      hidden input. The value must be base-32 encoded (with no padding) for safety.
+
+      Note the key is `mfa` because `2fa` is not a valid atom when using the form helper.
+
+          %{
+            "mfa" => %{
+              "otp_code" => string,
+              "otp_secret" => string  # Base-32 encoded, no padding
+            }
+          }
+
+      ## Success Response
+
+      Renders `show_2fa_codes.html` with a success message and the following assign:
+
+        * `:codes` (list of strings): Newly-generated backup codes for two-factor authentication
+          without the second device.
+
+      ## Error Response
+
+      In the event of a verification failure, renders `new_2fa.html` with the following assigns:
+
+        * `:changeset` (`Ecto.Changeset`): Changeset for enabling 2FA. Expects two fields,
+          `otp_code` with a verification code and `otp_secret` with the base-32 encoded (no padding)
+          secret used to generate the QR code.
+
+        * `:otp_uri` (string): OTP setup URI.
+
+        * `:otp_secret` (string): Base-32 encoded (no padding) OTP secret, to be returned as a
+          hidden input along with the verification code.
+
+        * `:qr_code` (HTML raw): OTP setup QR code, encoded as an SVG using `Phoenix.HTML.raw/1`.
+
+      """
+      @doc section: :mfa
+      @spec create_2fa(Conn.t(), Conn.params()) :: Conn.t()
+      def create_2fa(conn, %{"mfa" => params}) do
+        user = conn.assigns[:current_user]
+        routes = Module.concat(Controller.router_module(conn), Helpers)
+
+        if Identity.enabled_2fa?(user) do
+          conn
+          |> Controller.put_flash(:info, "Two-factor authentication is already enabled")
+          |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
+        else
+          params =
+            Map.update(params, "otp_secret", nil, fn secret ->
+              case Base.decode32(secret, padding: false) do
+                {:ok, secret} -> secret
+                :error -> nil
+              end
+            end)
+
+          case Identity.enable_2fa(user, params) do
+            {:ok, backup_codes} ->
+              conn
+              |> Controller.put_flash(:info, "Two-factor authentication enabled")
+              |> Controller.render("show_2fa_codes.html", codes: backup_codes)
+
+            {:error, changeset} ->
+              new_changeset = Identity.enable_2fa_changeset()
+              otp_secret = Ecto.Changeset.get_field(new_changeset, :otp_secret)
+              otp_uri = NimbleTOTP.otpauth_uri("Identity:#{user.id}", otp_secret)
+
+              qr_code =
+                otp_uri
+                |> encode_qr_code()
+                |> Phoenix.HTML.raw()
+
+              conn
+              |> Controller.put_flash(
+                :error,
+                "Verification code invalid. Please try again with this new code."
+              )
+              |> Controller.render("new_2fa.html",
+                changeset: changeset,
+                otp_uri: otp_uri,
+                otp_secret: Base.encode32(otp_secret, padding: false),
+                qr_code: qr_code
+              )
+          end
+        end
+      end
+
+      @doc """
+      Disable 2FA for the current user.
+
+      ## Incoming Params
+
+      This action has no incoming params.
+
+      ## Response
+
+      Redirects to the show 2FA route with a success or failure message.
+      """
+      @doc section: :mfa
+      @spec delete_2fa(Conn.t(), any) :: Conn.t()
+      def delete_2fa(conn, _params) do
+        user = conn.assigns[:current_user]
+        routes = Module.concat(Controller.router_module(conn), Helpers)
+
+        case Identity.disable_2fa(user) do
+          :ok ->
+            conn
+            |> Controller.put_flash(:info, "Two-factor authentication disabled")
+            |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
+
+          {:error, :not_found} ->
+            conn
+            |> Controller.put_flash(:error, "Unable to disable 2FA: login not found")
+            |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
         end
       end
 
@@ -288,6 +420,11 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       @doc section: :mfa
       @spec new_2fa(Conn.t(), any) :: no_return
       def new_2fa(_conn, _params), do: raise("NimbleTOTP is required for two-factor auth")
+
+      @doc "Enable 2FA for the current user. Requires optional `NimbleTOTP` dependency."
+      @doc section: :mfa
+      @spec create_2fa(Conn.t(), Conn.params()) :: no_return
+      def create_2fa(_conn, _params), do: raise("NimbleTOTP is required for two-factor auth")
     end
 
     #

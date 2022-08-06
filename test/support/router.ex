@@ -48,6 +48,7 @@ if Code.ensure_loaded?(Phoenix.Router) do
       post "/user/2fa/new", Identity.Controller, :create_2fa, as: :identity
       get "/user/2fa", Identity.Controller, :show_2fa, as: :identity
       delete "/user/2fa", Identity.Controller, :delete_2fa, as: :identity
+      put "/user/2fa/backup", Identity.Controller, :regenerate_2fa, as: :identity
     end
   end
 end

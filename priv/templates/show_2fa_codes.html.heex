@@ -1,0 +1,25 @@
+<div class="id_wrapper id_2fa_show_codes">
+  <h2 class="id_title">Two-factor authentication</h2>
+  <p class="id_info">
+    The following can be used as backup two-factor authentication codes if you do not have access
+    to your second device. Once a code is used, it cannot be used again; however you can regenerate
+    a new set of backup codes at any time.
+  </p>
+  <p class="id_info">
+    Please store these backup codes in a safe place. They cannot be viewed again, unless a new set
+    of codes are generated.
+  </p>
+
+  <div class="id_2fa_backup_codes">
+    <%= for code <- @codes do %>
+      <code><%= code %></code>
+    <% end %>
+  </div>
+
+  <div class="id_actions">
+    <%= link("Return",
+      to: routes(@conn).identity_path(@conn, :show_2fa),
+      class: "id_action_primary"
+    ) %>
+  </div>
+</div>
