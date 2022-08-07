@@ -73,3 +73,27 @@
 .id_divider {
   @apply border-b border-b-slate-300 mb-4 pb-4;
 }
+
+.id_qr_code {
+  @apply mb-4 text-center text-sm;
+}
+
+.id_qr_code svg {
+  @apply mx-auto;
+}
+
+.id_otp_uri {
+  @apply bg-slate-100 mb-4 p-2 rounded text-sm;
+}
+
+.id_otp_uri pre {
+  @apply break-all whitespace-pre-wrap;
+}
+
+.id_2fa_backup_codes {
+  @apply bg-slate-100 flex flex-wrap justify-between mb-4 p-2 rounded text-sm;
+}
+
+.id_2fa_backup_codes code {
+  @apply m-1;
+}

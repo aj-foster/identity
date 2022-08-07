@@ -425,6 +425,11 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       @doc section: :mfa
       @spec create_2fa(Conn.t(), Conn.params()) :: no_return
       def create_2fa(_conn, _params), do: raise("NimbleTOTP is required for two-factor auth")
+
+      @doc "Disable 2FA for the current user. Requires optional `NimbleTOTP` dependency."
+      @doc section: :mfa
+      @spec delete_2fa(Conn.t(), Conn.params()) :: no_return
+      def delete_2fa(_conn, _params), do: raise("NimbleTOTP is required for two-factor auth")
     end
 
     #
