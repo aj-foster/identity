@@ -13,6 +13,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     alias Phoenix.Controller
     alias Plug.Conn
+    alias Identity.Phoenix.Util
 
     @assign_password_reset_user :password_reset_user
     @session_remember_me_pending :session_remember_me_pending
@@ -107,12 +108,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       if user = Identity.get_user_by_email_and_password(email, password) do
         # TODO: Can we preload the login on the user?
         if Identity.enabled_2fa?(user) do
-          routes = Module.concat(Controller.router_module(conn), Helpers)
-
           conn
           |> Identity.Plug.log_in_user(user, remember_me: false, pending: true)
           |> Conn.put_session(@session_remember_me_pending, remember_me)
-          |> Controller.redirect(to: routes.identity_path(conn, :pending_2fa))
+          |> Controller.redirect(to: Util.path_for(conn, :pending_2fa))
         else
           conn
           |> Controller.put_flash(:info, "Successfully logged in")
@@ -257,11 +256,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         user = conn.assigns[:current_user]
 
         if Identity.enabled_2fa?(user) do
-          routes = Module.concat(Controller.router_module(conn), Helpers)
-
           conn
           |> Controller.put_flash(:info, "Two-factor authentication is already enabled")
-          |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
+          |> Controller.redirect(to: Util.path_for(conn, :show_2fa))
         else
           changeset = Identity.enable_2fa_changeset()
           otp_secret = Ecto.Changeset.get_field(changeset, :otp_secret)
@@ -326,12 +323,11 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       @spec create_2fa(Conn.t(), Conn.params()) :: Conn.t()
       def create_2fa(conn, %{"mfa" => params}) do
         user = conn.assigns[:current_user]
-        routes = Module.concat(Controller.router_module(conn), Helpers)
 
         if Identity.enabled_2fa?(user) do
           conn
           |> Controller.put_flash(:info, "Two-factor authentication is already enabled")
-          |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
+          |> Controller.redirect(to: Util.path_for(conn, :show_2fa))
         else
           params =
             Map.update(params, "otp_secret", nil, fn secret ->
@@ -387,18 +383,17 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       @spec delete_2fa(Conn.t(), any) :: Conn.t()
       def delete_2fa(conn, _params) do
         user = conn.assigns[:current_user]
-        routes = Module.concat(Controller.router_module(conn), Helpers)
 
         case Identity.disable_2fa(user) do
           :ok ->
             conn
             |> Controller.put_flash(:info, "Two-factor authentication disabled")
-            |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
+            |> Controller.redirect(to: Util.path_for(conn, :show_2fa))
 
           {:error, :not_found} ->
             conn
             |> Controller.put_flash(:error, "Unable to disable 2FA: login not found")
-            |> Controller.redirect(to: routes.identity_path(conn, :show_2fa))
+            |> Controller.redirect(to: Util.path_for(conn, :show_2fa))
         end
       end
 
@@ -550,11 +545,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       case Identity.reset_password(user, password_params) do
         {:ok, _} ->
-          routes = Module.concat(Controller.router_module(conn), Helpers)
-
           conn
           |> Controller.put_flash(:info, "Password reset successfully.")
-          |> Controller.redirect(to: routes.identity_path(conn, :new_session))
+          |> Controller.redirect(to: Util.path_for(conn, :new_session))
 
         {:error, changeset} ->
           Controller.render(conn, "new_password.html", changeset: changeset)
@@ -636,14 +629,12 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       case Identity.create_email(user, email, password) do
         :ok ->
-          routes = Module.concat(Controller.router_module(conn), Helpers)
-
           conn
           |> Controller.put_flash(
             :info,
             "A link to confirm your email has been sent to the new address."
           )
-          |> Controller.redirect(to: routes.identity_path(conn, :new_email))
+          |> Controller.redirect(to: Util.path_for(conn, :new_email))
 
         {:error, changeset} ->
           Controller.render(conn, "new_email.html", changeset: changeset)
@@ -857,12 +848,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
       case Identity.update_password(user, current_password, password_params) do
         {:ok, user} ->
-          routes = Module.concat(Controller.router_module(conn), Helpers)
-
           conn
           |> Controller.put_flash(:info, "Password updated successfully.")
           |> Identity.Plug.log_in_and_redirect_user(user,
-            to: routes.identity_path(conn, :edit_password)
+            to: Util.path_for(conn, :edit_password)
           )
 
         {:error, changeset} ->

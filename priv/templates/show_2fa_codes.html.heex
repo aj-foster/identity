@@ -18,7 +18,7 @@
 
   <div class="id_actions">
     <%= link("Return",
-      to: routes(@conn).identity_path(@conn, :show_2fa),
+      to: path_for(@conn, :show_2fa),
       class: "id_action_primary"
     ) %>
   </div>

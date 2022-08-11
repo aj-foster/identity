@@ -4,12 +4,7 @@
     Enter the six-digit code from your device, or any of your eight-character backup codes.
   </p>
 
-  <.form
-    let={f}
-    for={@conn}
-    action={routes(@conn).identity_path(@conn, :validate_2fa)}
-    as={:session}
-  >
+  <.form let={f} for={@conn} action={path_for(@conn, :validate_2fa)} as={:session}>
     <%= if @error do %>
       <div class="id_error_message">
         <p><%= @error %></p>
@@ -27,9 +22,9 @@
   </.form>
 
   <div class="id_links">
-    <%= link("Register", to: routes(@conn).identity_path(@conn, :new_user), class: "id_link") %> | <%= link(
+    <%= link("Register", to: path_for(@conn, :new_user), class: "id_link") %> | <%= link(
       "Forgot your password?",
-      to: routes(@conn).identity_path(@conn, :new_password_token),
+      to: path_for(@conn, :new_password_token),
       class: "id_link"
     ) %>
   </div>

@@ -12,13 +12,13 @@
   <div class="id_actions">
     <%= if @enabled? do %>
       <%= link("Disable",
-        to: routes(@conn).identity_path(@conn, :delete_2fa),
+        to: path_for(@conn, :delete_2fa),
         method: :delete,
         class: "id_action_primary"
       ) %>
     <% else %>
       <%= link("Enable",
-        to: routes(@conn).identity_path(@conn, :new_2fa),
+        to: path_for(@conn, :new_2fa),
         class: "id_action_primary"
       ) %>
     <% end %>
@@ -37,7 +37,7 @@
     </p>
     <div class="id_actions">
       <%= link("Regenerate Backup Codes",
-        to: routes(@conn).identity_path(@conn, :regenerate_2fa),
+        to: path_for(@conn, :regenerate_2fa),
         method: :post,
         class: "id_action_secondary"
       ) %>

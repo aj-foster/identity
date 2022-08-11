@@ -5,14 +5,7 @@ if Code.ensure_loaded?(Phoenix.View) do
     use Phoenix.View, root: @template_root, namespace: Identity.Phoenix
     use Phoenix.HTML
     import Phoenix.LiveView.Helpers
-
-    @doc """
-    Provides easy routing within Identity-provided views.
-    """
-    @spec routes(Plug.Conn.t()) :: module
-    def routes(conn) do
-      Module.concat(Phoenix.Controller.router_module(conn), Helpers)
-    end
+    import Identity.Phoenix.Util
 
     @doc """
     Generates tag for inlined form input errors.
