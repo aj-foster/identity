@@ -8,6 +8,7 @@ defmodule Identity do
   alias Identity.Changeset
   alias Identity.Schema.BasicLogin
   alias Identity.Schema.Email
+  alias Identity.Schema.OAuthLogin
   alias Identity.Schema.PasswordToken
   alias Identity.Schema.Session
   alias Identity.User
@@ -764,6 +765,32 @@ defmodule Identity do
     |> repo().delete_all()
 
     :ok
+  end
+
+  #
+  # OAuth
+  #
+
+  @doc """
+  Get a user by the OAuth provider and provider's ID.
+
+  ## Examples
+
+      iex> Identity.get_user_by_oauth(:github, "12345")
+      %User{id: "5374240f-944c-47c9-83a8-cfafc01473cb"}
+
+      iex> Identity.get_user_by_oauth("apple", "me@example.com")
+      nil
+
+  """
+  @spec get_user_by_oauth(String.t() | atom, String.t()) :: User.t() | nil
+  def get_user_by_oauth(provider, provider_id) do
+    OAuthLogin.get_by_provider_query(provider, provider_id)
+    |> repo().one()
+    |> case do
+      %OAuthLogin{user: user} -> user
+      nil -> nil
+    end
   end
 
   #

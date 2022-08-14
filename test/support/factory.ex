@@ -51,6 +51,23 @@ defmodule Identity.Test.Factory do
 
   def unique_user_email, do: sequence(:email, &"user-#{&1}@example.com")
 
+  def oauth_login_factory do
+    now = DateTime.utc_now()
+    token = Token.generate_token()
+
+    %Identity.Schema.OAuthLogin{
+      id: Ecto.UUID.generate(),
+      expires_at: nil,
+      inserted_at: now,
+      last_active_at: now,
+      provider: "github",
+      provider_id: sequence(:oauth, &to_string/1),
+      scopes: ["user:email"],
+      token: Base.url_encode64(token, padding: false),
+      user: build(:user)
+    }
+  end
+
   def password_token_factory do
     now = DateTime.utc_now()
     token = Token.generate_token()

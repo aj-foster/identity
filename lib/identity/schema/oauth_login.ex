@@ -9,6 +9,7 @@ defmodule Identity.Schema.OAuthLogin do
   > maintainers of the library.
   """
   use Ecto.Schema
+  import Ecto.Query
   import Identity.Config
 
   @user user_schema()
@@ -30,5 +31,20 @@ defmodule Identity.Schema.OAuthLogin do
     belongs_to(:user, @user)
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
+  end
+
+  #
+  # Queries
+  #
+
+  @doc "Get the OAuth login for the given `provider` and provider's ID."
+  @spec get_by_provider_query(String.t() | atom, String.t()) :: Ecto.Query.t()
+  def get_by_provider_query(provider, provider_id) do
+    provider = to_string(provider)
+
+    from(o in __MODULE__, as: :oauth)
+    |> where(provider: ^provider, provider_id: ^provider_id)
+    |> join(:inner, [oauth: o], u in assoc(o, :user), as: :user)
+    |> preload([user: u], user: u)
   end
 end

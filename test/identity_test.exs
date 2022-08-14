@@ -796,4 +796,16 @@ defmodule IdentityTest do
       assert [_, _] = Repo.all(Session)
     end
   end
+
+  describe "get_user_by_oauth/2" do
+    test "gets a user by OAuth provider details" do
+      login = Factory.insert(:oauth_login)
+      user_id = login.user.id
+      assert %User{id: ^user_id} = Identity.get_user_by_oauth(login.provider, login.provider_id)
+    end
+
+    test "returns nil for an unknown user" do
+      assert is_nil(Identity.get_user_by_oauth("github", "12345"))
+    end
+  end
 end
