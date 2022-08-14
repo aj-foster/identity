@@ -96,9 +96,43 @@ defmodule Identity.Migrations.V01 do
 
     create_if_not_exists(index(:user_sessions, [:user_id], prefix: prefix))
     create_if_not_exists(unique_index(:user_sessions, [:token], prefix: prefix))
+
+    #
+    # OAuth
+    #
+
+    create_if_not_exists table(:user_oauth_logins, primary_key: false, prefix: prefix) do
+      add(:id, :uuid, primary_key: true)
+      add(:expires_at, :utc_datetime_usec)
+      add(:last_active_at, :utc_datetime_usec, null: false)
+      add(:provider, :text, null: false)
+      add(:provider_id, :text, null: false)
+      add(:scopes, {:array, :text}, null: false, default: [])
+      add(:token, :text, null: false)
+
+      add(:user_id, references(:users, type: :binary_id, on_delete: :delete_all, prefix: prefix),
+        null: false
+      )
+
+      timestamps(type: :utc_datetime_usec, updated_at: false)
+    end
+
+    create_if_not_exists(
+      unique_index(:user_oauth_logins, [:provider, :provider_id], prefix: prefix)
+    )
+
+    create_if_not_exists(index(:user_oauth_logins, [:user_id], prefix: prefix))
   end
 
   def down(%{prefix: prefix}) do
+    #
+    # OAuth
+    #
+
+    drop_if_exists(unique_index(:user_oauth_logins, [:provider, :provider_id], prefix: prefix))
+    drop_if_exists(index(:user_oauth_logins, [:user_id], prefix: prefix))
+    drop_if_exists(table(:user_oauth_logins, prefix: prefix))
+
     #
     # Sessions
     #
