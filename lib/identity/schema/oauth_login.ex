@@ -12,6 +12,8 @@ defmodule Identity.Schema.OAuthLogin do
   import Ecto.Query
   import Identity.Config
 
+  alias Ecto.Changeset
+
   @user user_schema()
 
   @typedoc "Struct representing an OAuth login method."
@@ -31,6 +33,35 @@ defmodule Identity.Schema.OAuthLogin do
     belongs_to(:user, @user)
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
+  end
+
+  #
+  # Changesets
+  #
+
+  @doc "Create a changeset for creating or updating an OAuth login."
+  @spec from_auth(%__MODULE__{}, Ueberauth.Auth.t()) :: Ecto.Changeset.t(%__MODULE__{})
+  def from_auth(login \\ %__MODULE__{}, auth) do
+    attrs = %{
+      expires_at: auth.credentials.expires_at,
+      last_active_at: DateTime.utc_now(),
+      provider: to_string(auth.provider),
+      provider_id: auth.uid,
+      scopes: auth.credentials.scopes,
+      token: auth.credentials.token
+    }
+
+    login
+    |> Changeset.cast(attrs, [
+      :expires_at,
+      :last_active_at,
+      :provider,
+      :provider_id,
+      :scopes,
+      :token
+    ])
+    |> Changeset.validate_required([:last_active_at, :provider, :provider_id, :token])
+    |> Changeset.unique_constraint([:provider, :provider_id])
   end
 
   #

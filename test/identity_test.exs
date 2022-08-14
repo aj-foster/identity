@@ -4,6 +4,7 @@ defmodule IdentityTest do
   alias Identity
   alias Identity.Schema.BasicLogin
   alias Identity.Schema.Email
+  alias Identity.Schema.OAuthLogin
   alias Identity.Schema.PasswordToken
   alias Identity.Schema.Session
   alias Identity.User
@@ -806,6 +807,51 @@ defmodule IdentityTest do
 
     test "returns nil for an unknown user" do
       assert is_nil(Identity.get_user_by_oauth("github", "12345"))
+    end
+  end
+
+  describe "create_or_update_oauth/2" do
+    setup do
+      auth = %Ueberauth.Auth{
+        credentials: %Ueberauth.Auth.Credentials{
+          expires_at: nil,
+          scopes: ["user:email"],
+          token: "fake_token"
+        },
+        provider: :github,
+        uid: "12345"
+      }
+
+      %{auth: auth}
+    end
+
+    test "creates an OAuth login for a new user", %{auth: auth} do
+      assert {:ok, %User{id: user_id}} = Identity.create_or_update_oauth(auth)
+
+      assert [%{provider: "github", provider_id: "12345", user_id: ^user_id}] =
+               Repo.all(OAuthLogin)
+    end
+
+    test "creates an OAuth login for an existing user", %{auth: auth} do
+      user = Factory.insert(:user)
+      user_id = user.id
+      assert {:ok, %User{id: ^user_id}} = Identity.create_or_update_oauth(auth, user: user)
+
+      assert [%{provider: "github", provider_id: "12345", user_id: ^user_id}] =
+               Repo.all(OAuthLogin)
+    end
+
+    test "updates an OAuth login for an existing user", %{auth: auth} do
+      assert {:ok, %User{} = user} = Identity.create_or_update_oauth(auth)
+      auth = %{auth | credentials: %{auth.credentials | token: "fake_token_2"}}
+      assert {:ok, ^user} = Identity.create_or_update_oauth(auth, user: user)
+      assert [%{token: "fake_token_2"}] = Repo.all(OAuthLogin)
+    end
+
+    test "returns an error for an OAuth login related to a different user", %{auth: auth} do
+      assert {:ok, %User{}} = Identity.create_or_update_oauth(auth)
+      user = Factory.insert(:user)
+      assert {:error, :incorrect_user} = Identity.create_or_update_oauth(auth, user: user)
     end
   end
 end

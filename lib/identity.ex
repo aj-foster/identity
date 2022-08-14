@@ -783,6 +783,7 @@ defmodule Identity do
       nil
 
   """
+  @doc section: :oauth
   @spec get_user_by_oauth(String.t() | atom, String.t()) :: User.t() | nil
   def get_user_by_oauth(provider, provider_id) do
     OAuthLogin.get_by_provider_query(provider, provider_id)
@@ -790,6 +791,59 @@ defmodule Identity do
     |> case do
       %OAuthLogin{user: user} -> user
       nil -> nil
+    end
+  end
+
+  @doc """
+  Create or update an OAuth login for an existing or new user.
+
+  This multi-purpose function serves all of the following cases:
+
+    * Creating a new user with new OAuth information, such as when a user signs in for the first
+      time. This occurs when no matching OAuth record is found and the `:user` option is `nil`.
+    * Updating an existing user with new OAuth information, such as when a user adds a new OAuth
+      provider to their account. This occurs when no matching OAuth record is found and the `:user`
+      option is set to an existing user.
+    * Updating existing OAuth information, such as when a user logs in to an OAuth provider with
+      new scopes. This occurs when an OAuth record is found, and its associated user matches the
+      one provided in the `:user` option.
+
+  If a user is provided, but an existing OAuth record is found associated with a different user,
+  `{:error, :incorrect_user}` is returned.
+
+  ## Options
+
+    * `:user` (user struct): User to associate with the new or updated OAuth information.
+
+  """
+  @doc section: :oauth
+  @spec create_or_update_oauth(Ueberauth.Auth.t(), keyword) :: {:ok, User.t()} | {:error, any}
+  def create_or_update_oauth(auth, opts \\ []) do
+    %{provider: provider, uid: provider_id} = auth
+
+    OAuthLogin.get_by_provider_query(provider, provider_id)
+    |> repo().one()
+    |> case do
+      %OAuthLogin{user: user} = login ->
+        if opts[:user] && user.id != opts[:user].id do
+          {:error, :incorrect_user}
+        else
+          OAuthLogin.from_auth(login, auth)
+          |> repo().update()
+
+          {:ok, user}
+        end
+
+      nil ->
+        user = opts[:user] || %@user{}
+
+        OAuthLogin.from_auth(auth)
+        |> Ecto.Changeset.put_assoc(:user, user)
+        |> repo().insert()
+        |> case do
+          {:ok, %OAuthLogin{user: user}} -> {:ok, user}
+          {:error, changeset} -> {:error, changeset}
+        end
     end
   end
 
