@@ -644,4 +644,83 @@ defmodule Identity.ControllerTest do
       assert get_session(old_password_conn, :user_token) == get_session(conn, :user_token)
     end
   end
+
+  describe "oauth_request/2" do
+    test "raises for an unknown provider", %{conn: conn} do
+      assert_raise RuntimeError, fn ->
+        get(conn, "/auth/something")
+      end
+    end
+  end
+
+  describe "oauth_callback/2" do
+    setup do
+      auth = %Ueberauth.Auth{
+        credentials: %Ueberauth.Auth.Credentials{
+          expires_at: nil,
+          scopes: ["user:email"],
+          token: "fake_token"
+        },
+        provider: :github,
+        uid: "12345"
+      }
+
+      %{auth: auth}
+    end
+
+    @tag :capture_log
+    test "informs of auth failures", %{conn: conn} do
+      failure = %Ueberauth.Failure{errors: [%Ueberauth.Failure.Error{message: "Something"}]}
+
+      conn =
+        assign(conn, :ueberauth_failure, failure)
+        |> get("/auth/something/callback")
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "Something"
+    end
+
+    test "logs in a new user", %{auth: auth, conn: conn} do
+      conn =
+        assign(conn, :ueberauth_auth, auth)
+        |> get("/auth/something/callback")
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :info) =~ "logged in"
+      token = get_session(conn, :user_token)
+      assert %Identity.User{} = Identity.get_user_by_session(token)
+    end
+
+    test "adds an identity to an existing user", %{auth: auth, conn: conn, user: user} do
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> assign(:ueberauth_auth, auth)
+        |> get("/auth/something/callback")
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :info) =~ "added new login"
+      assert Identity.get_user_by_oauth(auth.provider, auth.uid).id == user.id
+    end
+
+    test "returns an error when identity belongs to another user", %{
+      auth: auth,
+      conn: conn,
+      user: user
+    } do
+      conn
+      |> assign(:ueberauth_auth, auth)
+      |> get("/auth/something/callback")
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user)
+        |> assign(:ueberauth_auth, auth)
+        |> get("/auth/something/callback")
+
+      assert redirected_to(conn) == "/"
+      assert get_flash(conn, :error) =~ "already associated"
+      refute Identity.get_user_by_oauth(auth.provider, auth.uid).id == user.id
+    end
+  end
 end

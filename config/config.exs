@@ -21,3 +21,5 @@ config :identity,
   ecto_repos: [Identity.Test.Repo],
   notifier: Identity.Test.Notifier,
   repo: Identity.Test.Repo
+
+config :ueberauth, Ueberauth, providers: []

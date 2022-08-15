@@ -52,7 +52,8 @@ defmodule Identity.MixProject do
       {:plug_cowboy, "~> 2.0", optional: true},
       {:plug_crypto, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
-      {:ua_parser, "~> 1.8"}
+      {:ua_parser, "~> 1.8"},
+      {:ueberauth, "~> 0.10", optional: true}
     ]
   end
 
@@ -70,7 +71,8 @@ defmodule Identity.MixProject do
         Email: &(&1[:section] == :email),
         Session: &(&1[:section] == :session),
         "Two-Factor": &(&1[:section] == :mfa),
-        "Password Reset": &(&1[:section] == :password_reset)
+        "Password Reset": &(&1[:section] == :password_reset),
+        OAuth: &(&1[:section] == :oauth)
       ],
       groups_for_modules: [
         Schemas: [Identity.User, ~r/Identity.Schema/]

@@ -10,6 +10,11 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     import Phoenix.Controller
     use Phoenix.Controller.Pipeline
     import Identity.Plug
+    require Logger
+
+    if Code.ensure_loaded?(Ueberauth) do
+      plug Ueberauth
+    end
 
     alias Phoenix.Controller
     alias Plug.Conn
@@ -856,6 +861,118 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
         {:error, changeset} ->
           Controller.render(conn, "edit_password.html", changeset: changeset)
+      end
+    end
+
+    #
+    # OAuth
+    #
+
+    if Code.ensure_loaded?(Ueberauth) do
+      @doc """
+      Implements the request phase of the OAuth flow.
+
+      This action is not supported and will always raise. Ueberauth should handle all request phase
+      actions. If this action is called, it means that the relevant Ueberauth provider is not
+      configured or requires manual implementation (such as the email/password strategy), which
+      is not supported.
+      """
+      @doc section: :oauth
+      @spec oauth_request(Conn.t(), Conn.params()) :: no_return
+      def oauth_request(_conn, _params) do
+        raise "OAuth request phase called for an unknown or unsupported provider"
+      end
+
+      @doc """
+      Implements the callback phase of the OAuth flow.
+
+      ## Incoming Params
+
+      When an error has occurred, Ueberauth will place a failure struct in the `:ueberauth_failure`
+      assign. Successful requests will have an `:ueberauth_auth` assign. There are no params
+      expected.
+
+      ## Success Response
+
+        * If no user is currently logged in, and the authentication of an existing OAuth identity is
+          successful, then the associated user is logged in and redirected.
+        * If no user is currently logged in, and the authentication of a new OAuth identity is
+          successful, then a new user is created and logged in.
+        * If a user is logged in, and the authentication of a new OAuth identity is successful,
+          then a new identity is added to the existing user.
+
+      ## Error Response
+
+        * If a user is logged in, and the authentication of an existing OAuth identity for a
+          different user occurs, the user will be redirected with an error message.
+        * If an issue occurs while saving an OAuth identity, the user is redirected with an
+          error message.
+
+      """
+      @doc section: :oauth
+      @spec oauth_callback(Conn.t(), Conn.params()) :: Conn.t()
+      def oauth_callback(%{assigns: %{ueberauth_failure: failure}} = conn, _params) do
+        Logger.warn("Error during OAuth callback: \n#{inspect(failure)}")
+        message = Enum.map_join(failure.errors, "; ", fn error -> error.message end)
+
+        conn
+        |> Controller.put_flash(:error, "An error occurred during authentication: #{message}")
+        |> Controller.redirect(to: "/")
+      end
+
+      def oauth_callback(%{assigns: %{current_user: nil, ueberauth_auth: auth}} = conn, _params) do
+        case Identity.create_or_update_oauth(auth) do
+          {:ok, user} ->
+            conn
+            |> Controller.put_flash(:info, "Successfully logged in")
+            |> Identity.Plug.log_in_and_redirect_user(user)
+
+          {:error, changeset} ->
+            Logger.warn("Error during OAuth callback: \n#{inspect(changeset)}")
+
+            conn
+            |> put_flash(:error, "An error occurred while saving login")
+            |> redirect(to: "/")
+        end
+      end
+
+      def oauth_callback(%{assigns: %{current_user: user, ueberauth_auth: auth}} = conn, _params) do
+        case Identity.create_or_update_oauth(auth, user: user) do
+          {:ok, _user} ->
+            conn
+            |> Controller.put_flash(:info, "Successfully added new login")
+            |> redirect(to: "/")
+
+          {:error, :incorrect_user} ->
+            conn
+            |> Controller.put_flash(:error, "This login is already associated with another user")
+            |> redirect(to: "/")
+
+          {:error, changeset} ->
+            Logger.warn("Error during OAuth callback: \n#{inspect(changeset)}")
+
+            conn
+            |> put_flash(:error, "An error occurred while saving login")
+            |> redirect(to: "/")
+        end
+      end
+    else
+      @doc """
+      Implements the request phase of the OAuth flow. Requires optional `Ueberauth` dependency.
+      """
+      @doc section: :oauth
+      @spec oauth_request(Conn.t(), Conn.params()) :: no_return
+      def oauth_request(conn, _params) do
+        raise "Ueberauth is required for OAuth support. Once installed, recompile with `mix deps.compile identity --force`."
+      end
+
+      @doc """
+      Implements the callback phase of the OAuth flow. Requires optional `Ueberauth` dependency.
+      """
+      @doc section: :oauth
+      @spec oauth_callback(Conn.t(), Conn.params()) :: no_return
+      def oauth_callback(conn, _params) do
+        raise "Ueberauth is required for OAuth support. Once installed, recompile with `mix deps.compile identity --force`."
       end
     end
   end

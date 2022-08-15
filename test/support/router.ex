@@ -49,6 +49,13 @@ if Code.ensure_loaded?(Phoenix.Router) do
       get "/user/2fa", Identity.Controller, :show_2fa, as: :identity
       delete "/user/2fa", Identity.Controller, :delete_2fa, as: :identity
       put "/user/2fa/backup", Identity.Controller, :regenerate_2fa, as: :identity
+
+      #
+      # OAuth
+      #
+
+      get "/auth/:provider", Identity.Controller, :oauth_request, as: :identity
+      get "/auth/:provider/callback", Identity.Controller, :oauth_callback, as: :identity
     end
   end
 end

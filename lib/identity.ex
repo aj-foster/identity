@@ -830,8 +830,10 @@ defmodule Identity do
         else
           OAuthLogin.from_auth(login, auth)
           |> repo().update()
-
-          {:ok, user}
+          |> case do
+            {:ok, %OAuthLogin{user: user}} -> {:ok, user}
+            {:error, changeset} -> {:error, changeset}
+          end
         end
 
       nil ->
