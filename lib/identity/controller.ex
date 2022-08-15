@@ -962,7 +962,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       """
       @doc section: :oauth
       @spec oauth_request(Conn.t(), Conn.params()) :: no_return
-      def oauth_request(conn, _params) do
+      def oauth_request(_conn, _params) do
         raise "Ueberauth is required for OAuth support. Once installed, recompile with `mix deps.compile identity --force`."
       end
 
@@ -971,7 +971,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       """
       @doc section: :oauth
       @spec oauth_callback(Conn.t(), Conn.params()) :: no_return
-      def oauth_callback(conn, _params) do
+      def oauth_callback(_conn, _params) do
         raise "Ueberauth is required for OAuth support. Once installed, recompile with `mix deps.compile identity --force`."
       end
     end
