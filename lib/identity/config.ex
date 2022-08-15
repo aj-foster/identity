@@ -63,7 +63,7 @@ defmodule Identity.Config do
   effect.
   """
 
-  @default_notifier Identity.Notifier
+  @default_notifier Identity.Notifier.Log
   @key_notifier :notifier
   @key_repo :repo
 
