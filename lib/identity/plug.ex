@@ -123,6 +123,7 @@ if Code.ensure_loaded?(Plug.Conn) do
 
       conn
       |> log_in_user(user, opts)
+      |> Conn.delete_session(@session_return)
       |> Conn.resp(:found, "")
       |> Conn.put_resp_header("location", user_return_to)
     end

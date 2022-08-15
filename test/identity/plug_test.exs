@@ -56,6 +56,7 @@ defmodule Identity.PlugTest do
         |> Identity.Plug.log_in_and_redirect_user(user)
 
       assert redirected_to(conn) == "/hello"
+      refute get_session(conn, :user_return_to)
     end
 
     test "optionally writes a remember me cookie", %{conn: conn, user: user} do
