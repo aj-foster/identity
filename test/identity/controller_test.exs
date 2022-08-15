@@ -700,7 +700,7 @@ defmodule Identity.ControllerTest do
 
       assert redirected_to(conn) == "/"
       assert get_flash(conn, :info) =~ "added new login"
-      assert Identity.get_user_by_oauth(auth.provider, auth.uid).id == user.id
+      assert Identity.get_user_by_oauth(auth).id == user.id
     end
 
     test "returns an error when identity belongs to another user", %{
@@ -720,7 +720,7 @@ defmodule Identity.ControllerTest do
 
       assert redirected_to(conn) == "/"
       assert get_flash(conn, :error) =~ "already associated"
-      refute Identity.get_user_by_oauth(auth.provider, auth.uid).id == user.id
+      refute Identity.get_user_by_oauth(auth).id == user.id
     end
   end
 end

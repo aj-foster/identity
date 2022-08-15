@@ -798,15 +798,17 @@ defmodule IdentityTest do
     end
   end
 
-  describe "get_user_by_oauth/2" do
+  describe "get_user_by_oauth/1" do
     test "gets a user by OAuth provider details" do
       login = Factory.insert(:oauth_login)
       user_id = login.user.id
-      assert %User{id: ^user_id} = Identity.get_user_by_oauth(login.provider, login.provider_id)
+      auth = %Ueberauth.Auth{provider: login.provider, uid: login.provider_id}
+      assert %User{id: ^user_id} = Identity.get_user_by_oauth(auth)
     end
 
     test "returns nil for an unknown user" do
-      assert is_nil(Identity.get_user_by_oauth("github", "12345"))
+      login = %{provider: "github", uid: "12345"}
+      assert is_nil(Identity.get_user_by_oauth(login))
     end
   end
 

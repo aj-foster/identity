@@ -784,8 +784,10 @@ defmodule Identity do
 
   """
   @doc section: :oauth
-  @spec get_user_by_oauth(String.t() | atom, String.t()) :: User.t() | nil
-  def get_user_by_oauth(provider, provider_id) do
+  @spec get_user_by_oauth(Ueberauth.Auth.t()) :: User.t() | nil
+  def get_user_by_oauth(auth) do
+    %{provider: provider, uid: provider_id} = auth
+
     OAuthLogin.get_by_provider_query(provider, provider_id)
     |> repo().one()
     |> case do
