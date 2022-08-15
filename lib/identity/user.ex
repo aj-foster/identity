@@ -57,6 +57,7 @@ defmodule Identity.User do
           :emails => Ecto.Schema.has_many(Identity.Schema.Email.t()),
           :id => Ecto.UUID.t(),
           :login => Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
+          :oauth_logins => Ecto.Schema.has_many(Identity.Schema.OAuthLogin.t()),
           :password_token => Ecto.Schema.has_one(Identity.Schema.PasswordToken.t() | nil),
           :sessions => Ecto.Schema.has_many(Identity.Schema.Session.t()),
           optional(any) => any
@@ -67,6 +68,7 @@ defmodule Identity.User do
           :emails => Ecto.Schema.has_many(Identity.Schema.Email.t()),
           :id => Ecto.UUID.t() | nil,
           :login => Ecto.Schema.has_one(Identity.Schema.BasicLogin.t() | nil),
+          :oauth_logins => Ecto.Schema.has_many(Identity.Schema.OAuthLogin.t()),
           :password_token => Ecto.Schema.has_one(Identity.Schema.PasswordToken.t() | nil),
           :sessions => Ecto.Schema.has_many(Identity.Schema.Session.t()),
           optional(any) => any

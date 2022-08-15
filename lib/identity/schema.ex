@@ -41,6 +41,7 @@ defmodule Identity.Schema do
     quote do
       Ecto.Schema.has_many(:emails, Identity.Schema.Email, foreign_key: :user_id)
       Ecto.Schema.has_one(:login, Identity.Schema.BasicLogin, foreign_key: :user_id)
+      Ecto.Schema.has_many(:oauth_logins, Identity.Schema.OAuthLogin, foreign_key: :user_id)
       Ecto.Schema.has_one(:password_token, Identity.Schema.PasswordToken, foreign_key: :user_id)
       Ecto.Schema.has_many(:sessions, Identity.Schema.Session, foreign_key: :user_id)
     end
