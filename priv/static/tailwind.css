@@ -34,7 +34,7 @@
   @apply ml-2 text-slate-700 text-sm;
 }
 
-.id_wrapper .invalid-feedback {
+.id_wrapper .invalid_feedback {
   @apply pl-4 text-red-600 text-sm;
 }
 
