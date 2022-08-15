@@ -46,7 +46,7 @@ defmodule Identity.Schema.OAuthLogin do
       expires_at: auth.credentials.expires_at,
       last_active_at: DateTime.utc_now(),
       provider: to_string(auth.provider),
-      provider_id: auth.uid,
+      provider_id: to_string(auth.uid),
       scopes: auth.credentials.scopes,
       token: auth.credentials.token
     }
@@ -72,6 +72,7 @@ defmodule Identity.Schema.OAuthLogin do
   @spec get_by_provider_query(String.t() | atom, String.t()) :: Ecto.Query.t()
   def get_by_provider_query(provider, provider_id) do
     provider = to_string(provider)
+    provider_id = to_string(provider_id)
 
     from(o in __MODULE__, as: :oauth)
     |> where(provider: ^provider, provider_id: ^provider_id)
