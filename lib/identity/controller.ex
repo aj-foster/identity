@@ -116,10 +116,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     plug :fetch_flash
     plug :put_new_view, Identity.Phoenix.View
 
-    plug :fetch_current_user
+    plug :fetch_identity
     plug :get_user_by_password_token when action in [:new_password, :create_password]
 
-    plug :redirect_if_user_is_authenticated
+    plug :redirect_if_authenticated
          when action in [
                 :new_session,
                 :create_session,
@@ -131,7 +131,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     plug :require_pending_login when action in [:pending_2fa, :validate_2fa]
 
-    plug :require_authenticated_user
+    plug :redirect_if_unauthenticated
          when action in [
                 :new_email,
                 :create_email,

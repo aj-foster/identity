@@ -102,10 +102,10 @@ defmodule Identity.PlugTest do
     end
   end
 
-  describe "fetch_current_user/2" do
+  describe "fetch_identity/2" do
     test "authenticates user from session", %{conn: conn, user: user} do
       user_token = Identity.create_session(user, "Test")
-      conn = conn |> put_session(:user_token, user_token) |> Identity.Plug.fetch_current_user([])
+      conn = conn |> put_session(:user_token, user_token) |> Identity.Plug.fetch_identity([])
       assert conn.assigns.current_user.id == user.id
     end
 
@@ -121,7 +121,7 @@ defmodule Identity.PlugTest do
       conn =
         conn
         |> put_req_cookie(@remember_me_cookie, signed_token)
-        |> Identity.Plug.fetch_current_user([])
+        |> Identity.Plug.fetch_identity([])
 
       assert get_session(conn, :user_token) == user_token
       assert conn.assigns.current_user.id == user.id
@@ -129,25 +129,25 @@ defmodule Identity.PlugTest do
 
     test "does not authenticate if data is missing", %{conn: conn, user: user} do
       _ = Identity.create_session(user, "Test")
-      conn = Identity.Plug.fetch_current_user(conn, [])
+      conn = Identity.Plug.fetch_identity(conn, [])
       refute get_session(conn, :user_token)
       refute conn.assigns.current_user
     end
   end
 
-  describe "redirect_if_user_is_authenticated/2" do
+  describe "redirect_if_authenticated/2" do
     test "redirects if user is authenticated", %{conn: conn, user: user} do
       conn =
         conn
         |> assign(:current_user, user)
-        |> Identity.Plug.redirect_if_user_is_authenticated([])
+        |> Identity.Plug.redirect_if_authenticated([])
 
       assert conn.halted
       assert redirected_to(conn) == "/"
     end
 
     test "does not redirect if user is not authenticated", %{conn: conn} do
-      conn = Identity.Plug.redirect_if_user_is_authenticated(conn, [])
+      conn = Identity.Plug.redirect_if_authenticated(conn, [])
       refute conn.halted
       refute conn.status
     end
@@ -157,16 +157,16 @@ defmodule Identity.PlugTest do
         conn
         |> assign(:current_user, user)
         |> put_session(:user_pending, true)
-        |> Identity.Plug.redirect_if_user_is_authenticated([])
+        |> Identity.Plug.redirect_if_authenticated([])
 
       refute conn.halted
       refute conn.status
     end
   end
 
-  describe "require_authenticated_user/2" do
+  describe "redirect_if_unauthenticated/2" do
     test "redirects if user is not authenticated", %{conn: conn} do
-      conn = conn |> fetch_flash() |> Identity.Plug.require_authenticated_user([])
+      conn = conn |> fetch_flash() |> Identity.Plug.redirect_if_unauthenticated([])
       assert conn.halted
       assert redirected_to(conn) == "/"
       assert get_flash(conn, :error) == "You must log in to access this page."
@@ -176,7 +176,7 @@ defmodule Identity.PlugTest do
       halted_conn =
         %{conn | path_info: ["foo"], query_string: ""}
         |> fetch_flash()
-        |> Identity.Plug.require_authenticated_user([])
+        |> Identity.Plug.redirect_if_unauthenticated([])
 
       assert halted_conn.halted
       assert get_session(halted_conn, :user_return_to) == "/foo"
@@ -184,7 +184,7 @@ defmodule Identity.PlugTest do
       halted_conn =
         %{conn | path_info: ["foo"], query_string: "bar=baz"}
         |> fetch_flash()
-        |> Identity.Plug.require_authenticated_user([])
+        |> Identity.Plug.redirect_if_unauthenticated([])
 
       assert halted_conn.halted
       assert get_session(halted_conn, :user_return_to) == "/foo?bar=baz"
@@ -192,7 +192,7 @@ defmodule Identity.PlugTest do
       halted_conn =
         %{conn | path_info: ["foo"], query_string: "bar", method: "POST"}
         |> fetch_flash()
-        |> Identity.Plug.require_authenticated_user([])
+        |> Identity.Plug.redirect_if_unauthenticated([])
 
       assert halted_conn.halted
       refute get_session(halted_conn, :user_return_to)
@@ -202,13 +202,17 @@ defmodule Identity.PlugTest do
       conn =
         conn
         |> fetch_flash()
-        |> Identity.Plug.require_authenticated_user(message: "Custom message")
+        |> Identity.Plug.redirect_if_unauthenticated(message: "Custom message")
 
       assert get_flash(conn, :error) == "Custom message"
     end
 
     test "does not redirect if user is authenticated", %{conn: conn, user: user} do
-      conn = conn |> assign(:current_user, user) |> Identity.Plug.require_authenticated_user([])
+      conn =
+        conn
+        |> assign(:current_user, user)
+        |> Identity.Plug.redirect_if_unauthenticated([])
+
       refute conn.halted
       refute conn.status
     end
@@ -219,7 +223,7 @@ defmodule Identity.PlugTest do
         |> fetch_flash()
         |> assign(:current_user, user)
         |> put_session(:user_pending, true)
-        |> Identity.Plug.require_authenticated_user([])
+        |> Identity.Plug.redirect_if_unauthenticated([])
 
       assert conn.halted
       assert redirected_to(conn) == "/"

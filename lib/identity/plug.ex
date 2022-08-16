@@ -173,9 +173,37 @@ if Code.ensure_loaded?(Plug.Conn) do
     # Plugs
     #
 
-    @doc "Authenticates the user by looking into the session and remember me token."
-    @spec fetch_current_user(Plug.Conn.t(), any) :: Plug.Conn.t()
-    def fetch_current_user(conn, _opts) do
+    @doc """
+    Authenticate the user by looking at the session and remember me token.
+
+    This plug can be added to any route (even if it will be used while logged out). In a Phoenix
+    app, it may be helpful to add it to the router's `:browser` pipeline after the `:fetch_session`
+    plug. For example:
+
+        defmodule MyAppWeb.Router do
+          use MyAppWeb, :router
+          import Identity.Plug
+
+          pipeline :browser do
+            plug :accepts, ["html"]
+            plug :fetch_session
+            plug :fetch_identity
+            plug :fetch_live_flash
+            plug :put_root_layout, {MyAppWeb.LayoutView, :root}
+            plug :protect_from_forgery
+            plug :put_secure_browser_headers
+          end
+
+          # ...
+
+    Then, the current user (if logged in) or `nil` can be accessed with the `:current_user` assign:
+
+        user = conn.assigns[:current_user]
+
+    By adding the plug to every route, the `@current_user` can reliably be used in templates.
+    """
+    @spec fetch_identity(Plug.Conn.t(), any) :: Plug.Conn.t()
+    def fetch_identity(conn, _opts) do
       {user_token, conn} = ensure_user_token(conn)
       user = user_token && Identity.get_user_by_session(user_token)
 
@@ -209,14 +237,14 @@ if Code.ensure_loaded?(Plug.Conn) do
     ## Examples
 
         # Defaults to configured `:after_sign_in` path or `"/"`.
-        plug :redirect_if_user_is_authenticated
+        plug :redirect_if_authenticated
 
         # Optionally set the redirect destination here.
-        plug :redirect_if_user_is_authenticated, to: "/"
+        plug :redirect_if_authenticated, to: "/"
 
     """
-    @spec redirect_if_user_is_authenticated(Conn.t(), keyword) :: Conn.t()
-    def redirect_if_user_is_authenticated(conn, opts) do
+    @spec redirect_if_authenticated(Conn.t(), keyword) :: Conn.t()
+    def redirect_if_authenticated(conn, opts) do
       pending? = Conn.get_session(conn, @session_pending) == true
 
       if conn.assigns[:current_user] && !pending? do
@@ -244,14 +272,14 @@ if Code.ensure_loaded?(Plug.Conn) do
     ## Examples
 
         # Defaults to configured `:sign_in` path or `"/"`.
-        plug :require_authenticated_user, message: "
+        plug :redirect_if_unauthenticated, message: "
 
         # Optionally set the redirect destination here.
-        plug :require_authenticated_user, to: "/"
+        plug :redirect_if_unauthenticated, to: "/"
 
     """
-    @spec require_authenticated_user(Conn.t(), keyword) :: Conn.t()
-    def require_authenticated_user(conn, opts) do
+    @spec redirect_if_unauthenticated(Conn.t(), keyword) :: Conn.t()
+    def redirect_if_unauthenticated(conn, opts) do
       pending? = Conn.get_session(conn, @session_pending) == true
 
       if conn.assigns[:current_user] && !pending? do
