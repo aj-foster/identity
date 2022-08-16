@@ -1,6 +1,21 @@
 defmodule Identity do
   @moduledoc """
-  Provides access to users, sessions, and logins.
+  Provides access to users, emails, sessions, and logins.
+
+  Functions in this module deal with the underlying data in Identity. Out of the box, applications
+  may not need to interface with this application directly. Instead, they may use functions from
+  `Identity.Controller` (for Phoenix) or `Identity.Plug` (for Phoenix or Plug).
+
+  ## Interface
+
+  Where possible, Identity hides the underlying structs used to store Identity-related information.
+  Your configured user module (see `Identity.Config`) is often the argument or response of a
+  function in this module. Where necessary, custom changesets wrap the fields that are persisted
+  to the database.
+
+  If you find yourself working with the underlying structs directly, querying their tables, or
+  otherwise peeking behind the curtain (except for curiosity, of course), please reach out to the
+  maintainers and share the problem you are trying to solve. It might be solvable for everyone.
   """
   import Ecto.Query
   import Identity.Config
@@ -38,7 +53,7 @@ defmodule Identity do
   @doc """
   Get a single user by ID, raising if the user does not exist.
 
-    ## Examples
+  ## Examples
 
       iex> Identity.get_user("c4904ead-264d-4ba1-960d-68b49b8e0e10")
       %Identity.User{id: "c4904ead-264d-4ba1-960d-68b49b8e0e10"}
@@ -54,7 +69,7 @@ defmodule Identity do
   @doc """
   Get a single user by ID, returning `{:ok, user}` or `{:error, :not_found}`.
 
-    ## Examples
+  ## Examples
 
       iex> Identity.get_user("c4904ead-264d-4ba1-960d-68b49b8e0e10")
       {:ok, %Identity.User{id: "c4904ead-264d-4ba1-960d-68b49b8e0e10"}}
@@ -441,6 +456,7 @@ defmodule Identity do
       ["one@example.com", "two@example.com"]
 
   """
+  @doc section: :email
   @spec list_emails(User.t()) :: [String.t()]
   def list_emails(user) do
     Email.list_emails_by_user_query(user.id)

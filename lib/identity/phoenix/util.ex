@@ -1,8 +1,5 @@
 defmodule Identity.Phoenix.Util do
-  @moduledoc """
-  Helpers for working with Identity-related controller actions and views.
-  """
-
+  @moduledoc false
   @routes_with_token [:new_password, :create_password, :confirm_email]
 
   @doc """

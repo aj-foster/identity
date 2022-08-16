@@ -6,6 +6,24 @@ Rapid authentication for new Elixir projects.
 
 Identity takes the best of Phoenix's `mix phx.gen.auth`, combines the power of [Ueberauth](https://github.com/ueberauth/ueberauth) for OAuth, and adds additional features like multi-factor authentication.
 It works to handle the logic of authentication so you can focus on your business domain.
+This includes:
+
+* Login with an email and password
+* Two-factor authentication
+* Email confirmation
+* Password resets
+* Login with OAuth providers (using Ueberauth)
+
+Some of the additional features include:
+
+* Out-of-the-box implementations of controller actions and templates ([learn more](guides/progressive-replacement.md))
+* Multiple email addresses per user
+* Listing and deleting sessions
+* Multiple OAuth providers per user
+* Both email/password and OAuth for the same user
+
+All features are optional.
+Integrate what you want, and ignore the rest!
 
 ## Installation
 

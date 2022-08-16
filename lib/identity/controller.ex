@@ -3,8 +3,97 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @moduledoc """
     Provides Phoenix controller actions for common identity-related actions.
 
-    This module is part of a [Progressive Replacement](guides/progressive-replacement.md) plan. See
-    that document for examples of the various ways to use this functionality.
+    > #### Note {:.info}
+    > This module is part of a [Progressive Replacement](guides/progressive-replacement.md) plan.
+    > See that document for examples of the various ways to use this functionality.
+
+    ## Routes
+
+    If you're looking to get off the ground running quickly, you can add all of the following to
+    your application's router and take advantage of this module and the provided templates:
+
+        # [Method] [Path], [Controller], [Action], [Options]
+
+        # Session
+        get "/session/new", Identity.Controller, :new_session, as: :identity
+        post "/session/new", Identity.Controller, :create_session, as: :identity
+
+        get "/session/2fa", Identity.Controller, :pending_2fa, as: :identity
+        post "/session/2fa", Identity.Controller, :validate_2fa, as: :identity
+
+        delete "/session", Identity.Controller, :delete_session, as: :identity
+
+        # Password Reset
+        get "/password/new", Identity.Controller, :new_password_token, as: :identity
+        post "/password/new", Identity.Controller, :create_password_token, as: :identity
+
+        get "/password/:token", Identity.Controller, :new_password, as: :identity
+        put "/password/:token", Identity.Controller, :create_password, as: :identity
+
+        # Email Addresses
+        get "/email/new", Identity.Controller, :new_email, as: :identity
+        post "/email/new", Identity.Controller, :create_email, as: :identity
+        get "/email/:token", Identity.Controller, :confirm_email, as: :identity
+        delete "/user/email", Identity.Controller, :delete_email, as: :identity
+
+        # User Registration
+        get "/user/new", Identity.Controller, :new_user, as: :identity
+        post "/user/new", Identity.Controller, :create_user, as: :identity
+
+        # User Settings
+        get "/user/password", Identity.Controller, :edit_password, as: :identity
+        put "/user/password", Identity.Controller, :update_password, as: :identity
+
+        get "/user/2fa/new", Identity.Controller, :new_2fa, as: :identity
+        post "/user/2fa/new", Identity.Controller, :create_2fa, as: :identity
+        get "/user/2fa", Identity.Controller, :show_2fa, as: :identity
+        delete "/user/2fa", Identity.Controller, :delete_2fa, as: :identity
+        put "/user/2fa/backup", Identity.Controller, :regenerate_2fa, as: :identity
+
+        # OAuth: these paths should match the configuration of Ueberauth.
+        get "/auth/:provider", Identity.Controller, :oauth_request, as: :identity
+        get "/auth/:provider/callback", Identity.Controller, :oauth_callback, as: :identity
+
+    For each route, the path can be modified, but the method, action, and `:as` option should remain
+    the same. If you decide to implement an action yourself, simply change the controller.
+
+    It is necessary to keep the action names as they are listed above and provide `as: :identity`
+    in order for other parts of the application to find the routes. For example, the
+    `create_session` action looks up the 2FA form using the `pending_2fa` and `as: :identity`
+    information.
+
+    > #### Important {:.warning}
+    > Even if you choose to implement a controller action yourself, you may need to keep the same
+    > name and options if you continue to use Identity-provided actions or templates for other
+    > routes.
+
+    This trade-off was made deliberately so you can choose any path for each route. Furthermore,
+    it is not necessary to enable path helpers in your router.
+
+    ## Custom Views
+
+    Even when you use the Identity-provided controller actions, you may still customize the
+    templates that are rendered. To do this, use the `Phoenix.Controller.put_view/2` plug in a
+    router pipeline:
+
+        pipeline :custom_view do
+          plug :put_view, MyAppWeb.IdentityView
+        end
+
+        scope "/" do
+          pipe_through :custom_view
+
+          get "/session/new", Identity.Controller, :new_session, as: :identity
+          post "/session/new", Identity.Controller, :create_session, as: :identity
+          # ...
+        end
+
+    The provided controller actions will now render the new view's templates. Make sure your
+    templates use the assigns available from each action, and the parameters required for any
+    Identity-provided form actions.
+
+    Not ready to replace all of the Identity-provided templates? There's no need. You can add the
+    custom view to any subset of the Identity routes, and leave the rest alone.
     """
     import Plug.Conn, except: [delete_session: 2]
     import Phoenix.Controller
@@ -220,6 +309,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       * `:enabled?` (boolean): Whether 2FA is enabled for the current user.
 
     """
+    @doc section: :mfa
     @spec show_2fa(Conn.t(), any) :: Conn.t()
     def show_2fa(conn, _params) do
       user = conn.assigns[:current_user]
