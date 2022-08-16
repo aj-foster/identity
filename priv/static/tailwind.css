@@ -82,11 +82,11 @@
   @apply mx-auto;
 }
 
-.id_otp_uri {
-  @apply bg-slate-100 mb-4 p-2 rounded text-sm;
+.id_otp_secret {
+  @apply bg-slate-100 mb-4 p-2 rounded text-center text-sm;
 }
 
-.id_otp_uri pre {
+.id_otp_secret pre {
   @apply break-all whitespace-pre-wrap;
 }
 

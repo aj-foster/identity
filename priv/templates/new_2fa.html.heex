@@ -8,12 +8,12 @@
   <div class="id_qr_code"><%= @qr_code %></div>
 
   <p class="id_info">
-    If QR codes are not supported, you can also input the code below in the applciation of your
+    If QR codes are not supported, you can also input the code below in the application of your
     choice.
   </p>
 
-  <div class="id_otp_uri">
-    <pre><code><%= @otp_uri %></code></pre>
+  <div class="id_otp_secret">
+    <pre><code><%= @otp_secret %></code></pre>
   </div>
 
   <.form let={f} for={@changeset} action={path_for(@conn, :create_2fa)} as={:mfa}>
