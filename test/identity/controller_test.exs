@@ -207,7 +207,6 @@ defmodule Identity.ControllerTest do
       assert response = html_response(conn, 200)
       assert response =~ "form action=\"/user/2fa/new\""
       assert response =~ "svg"
-      assert response =~ "otpauth://"
     end
 
     test "redirects if 2FA already enabled", %{conn: conn, user: user} do
