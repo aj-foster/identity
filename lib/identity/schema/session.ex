@@ -87,7 +87,8 @@ defmodule Identity.Schema.Session do
 
     get_by_token_query(token)
     |> where([session: s], s.inserted_at > ago(@expiration_seconds, "second"))
-    |> update(set: [last_active_at: ^now])
-    |> select([session: s], %@user{id: s.user_id})
+    |> update([session: s], set: [last_active_at: ^now])
+    |> join(:inner, [session: s], u in assoc(s, :user), as: :user)
+    |> select([user: u], u)
   end
 end
