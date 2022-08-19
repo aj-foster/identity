@@ -185,7 +185,7 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
 
       assert {:ok, _user} =
-               Identity.create_email_and_login(user, %{email: email, password: password})
+               Identity.create_email_and_login(%{email: email, password: password}, user: user)
 
       assert [email_struct] = preload(Email, :user) |> Repo.all()
       assert is_struct(email_struct.user, User)
@@ -200,7 +200,7 @@ defmodule IdentityTest do
       user = Factory.insert(:user)
 
       assert {:ok, _user} =
-               Identity.create_email_and_login(user, %{email: email, password: password})
+               Identity.create_email_and_login(%{email: email, password: password}, user: user)
 
       assert_received {:confirm_email, ^email, token}
       assert {:ok, token} = Base.url_decode64(token, padding: false)

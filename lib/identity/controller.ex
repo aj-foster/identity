@@ -868,7 +868,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :user
     @spec create_user(Conn.t(), Conn.params()) :: Conn.t()
     def create_user(conn, %{"user" => user_params}) do
-      case Identity.create_email_and_login(user_params) do
+      fun = fn token -> Util.url_for(conn, :confirm_email, token) end
+
+      case Identity.create_email_and_login(user_params, confirmation: fun) do
         {:ok, user} ->
           conn
           |> Controller.put_flash(

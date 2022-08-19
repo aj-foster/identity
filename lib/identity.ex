@@ -154,12 +154,22 @@ defmodule Identity do
   end
 
   @doc """
-  Create a basic login and unconfirmed email for the given `user` or a brand new user.
+  Create a basic login and unconfirmed email for the given user or a brand new user.
 
   Use this function with an existing user to add email/password login if they currently log in with
-  another method. Omit the user argument if someone registers for a new account. If desired,
-  confirmation of the email can be required using the notifier and `confirm_email/1`. See
-  `c:Identity.Notifier.confirm_email/2`.
+  another method. Omit the user argument if someone registers for a new account.
+
+  If desired, confirmation of the email can be required using the notifier and `confirm_email/1`.
+  Be sure to pass the `confirmation_url` option to add the correct URL to outgoing emails. See
+  `c:Identity.Notifier.confirm_email/2` for more information.
+
+  ## Options
+
+    * `:confirmation` (function `String.t() -> String.t()`): Function to confirm a (human-readable,
+      URL-safe) confirmation token into the email confirmation URL. This is necessary for email
+      notifiers. Defaults to using the token without embedding it in a URL.
+
+    * `:user` (user struct): User to add email/password login. Defaults to inserting a new user.
 
   ## Changeset
 
@@ -174,10 +184,12 @@ defmodule Identity do
 
   """
   @doc section: :login
-  @spec create_email_and_login(User.new(), map) ::
+  @spec create_email_and_login(map, keyword) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t(Changeset.email_password_data())}
-  def create_email_and_login(user \\ %@user{}, attrs) do
+  def create_email_and_login(attrs, opts \\ []) do
     changeset = Changeset.email_and_password(attrs)
+    user = opts[:user] || %@user{}
+    confirmation_url_fun = opts[:confirmation] || (& &1)
 
     with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
       email_changeset =
@@ -195,7 +207,7 @@ defmodule Identity do
       |> repo().transaction()
       |> case do
         {:ok, %{email: %Email{email: email, token: encoded_token, user: user}}} ->
-          notifier().confirm_email(email, encoded_token)
+          notifier().confirm_email(email, confirmation_url_fun.(encoded_token))
           {:ok, user}
 
         {:error, _phase, changeset, _changes} ->
