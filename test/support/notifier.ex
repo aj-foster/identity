@@ -5,13 +5,13 @@ defmodule Identity.Test.Notifier do
   """
   use Identity.Notifier
 
-  def confirm_email(email, token) do
-    send(self(), {:confirm_email, email, token})
+  def confirm_email(email, url) do
+    send(self(), {:confirm_email, email, url})
     :ok
   end
 
-  def reset_password(user, token) do
-    send(self(), {:reset_password, user, token})
+  def reset_password(user, url) do
+    send(self(), {:reset_password, user, url})
     :ok
   end
 end
