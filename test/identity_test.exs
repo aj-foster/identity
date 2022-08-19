@@ -73,6 +73,17 @@ defmodule IdentityTest do
 
       assert %User{id: ^user_id} = Identity.get_user_by_email_and_password(email, password)
     end
+
+    test "updates last_active_at field" do
+      %{id: user_id} = user = Factory.insert(:user)
+      password = Factory.valid_user_password()
+      Factory.insert(:basic_login, password: password, user: user, last_active_at: nil)
+      %{email: email} = Factory.insert(:email, user: user)
+
+      assert %User{id: ^user_id} = Identity.get_user_by_email_and_password(email, password)
+      assert [%BasicLogin{last_active_at: last_active_at}] = Identity.Test.Repo.all(BasicLogin)
+      assert is_struct(last_active_at, DateTime)
+    end
   end
 
   describe "validate_password/2" do

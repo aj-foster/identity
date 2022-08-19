@@ -110,7 +110,12 @@ defmodule Identity do
     login = Email.get_login_by_email_query(email) |> repo().one()
 
     if BasicLogin.correct_password?(login, password) do
-      %@user{login.user | login: login}
+      BasicLogin.set_last_active_at_query(login)
+      |> repo().update_all([])
+      |> case do
+        {1, [updated_login]} -> %@user{login.user | login: updated_login}
+        {0, []} -> %@user{login.user | login: login}
+      end
     end
   end
 

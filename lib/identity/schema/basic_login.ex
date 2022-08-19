@@ -295,7 +295,20 @@ defmodule Identity.Schema.BasicLogin do
     |> where(user_id: ^user_id)
   end
 
-  @doc "Remove OTP-related data from the login associated with the given `user`."
+  @doc """
+  Update the last recorded time of activity with this login. Call with `c:Ecto.Repo.update_all/3`.
+  """
+  @spec set_last_active_at_query(t) :: Ecto.Query.t()
+  def set_last_active_at_query(%__MODULE__{id: id}) do
+    now = DateTime.utc_now()
+
+    from(l in __MODULE__, as: :login)
+    |> where(id: ^id)
+    |> update(set: [last_active_at: ^now])
+    |> select([login: l], l)
+  end
+
+  @doc "Update the last recorded time a one-time password was used (to prevent reuse)."
   @spec set_last_used_otp_query(User.t()) :: Ecto.Query.t()
   def set_last_used_otp_query(user) do
     now = DateTime.utc_now()
