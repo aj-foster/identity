@@ -83,4 +83,48 @@ defmodule Identity.Phoenix.Util do
       raise "Identity route #{inspect(route)} not found"
     end
   end
+
+  @doc """
+  Gets the URL for an identity-related controller action, whether the action is implemented by
+  Identity or by the consuming application. Raises if the route is not defined.
+
+  This requires the route to be marked `as: :identity` and have the same action name as the
+  Identity-implemented action. For example, the session creation route must be defined as:
+
+      post "/any/path", MyAppWeb.AnyController, :create_session, as: :identity
+
+  In the event that multiple routes define the same action with `as: :identity`, the first will
+  be used.
+
+  ## Examples
+
+  Because some routes require a path parameter, there are two variations of this function:
+
+      iex> url_for(conn, :new_session)
+      "http://localhost:4000/session/new"
+
+      iex> url_for(conn, :confirm_email, token)
+      "http://localhost:4000/email/:token"
+
+      iex> url_for(conn, :unknown_route)
+      ** (RuntimeError) Identity route :unknown_route not found
+
+      iex> url_for(conn, :new_password, token)
+      ** (RuntimeError) Identity route :new_password has multiple path parameters: "/password/:token/:other"
+
+  """
+  @spec url_for(Plug.Conn.t(), atom, String.t()) :: String.t() | no_return
+  def url_for(conn, route, token) when route in @routes_with_token do
+    url = Phoenix.Controller.endpoint_module(conn).url()
+    path = path_for(conn, route, token)
+    url <> path
+  end
+
+  @doc false
+  @spec url_for(Plug.Conn.t(), atom) :: String.t() | no_return
+  def url_for(conn, route) do
+    url = Phoenix.Controller.endpoint_module(conn).url()
+    path = path_for(conn, route)
+    url <> path
+  end
 end
