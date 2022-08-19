@@ -194,8 +194,8 @@ defmodule Identity do
       end)
       |> repo().transaction()
       |> case do
-        {:ok, %{email: %Email{token: encoded_token, user: user}}} ->
-          notifier().confirm_email(user, encoded_token)
+        {:ok, %{email: %Email{email: email, token: encoded_token, user: user}}} ->
+          notifier().confirm_email(email, encoded_token)
           {:ok, user}
 
         {:error, _phase, changeset, _changes} ->
@@ -526,8 +526,8 @@ defmodule Identity do
       |> Email.registration_changeset(%{email: email})
       |> Ecto.Changeset.put_assoc(:user, user)
 
-    with {:ok, %Email{token: encoded_token}} <- repo().insert(changeset) do
-      notifier().confirm_email(user, encoded_token)
+    with {:ok, %Email{email: email, token: encoded_token}} <- repo().insert(changeset) do
+      notifier().confirm_email(email, encoded_token)
     end
   end
 

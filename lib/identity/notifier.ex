@@ -42,9 +42,9 @@ defmodule Identity.Notifier do
     quote do
       @behaviour Identity.Notifier
 
-      def confirm_email(user, _token) do
+      def confirm_email(email, _token) do
         require Logger
-        Logger.info("[Identity] Email confirmation initiated for user #{user.id}")
+        Logger.info("[Identity] Email confirmation initiated for email #{email}")
       end
 
       def reset_password(user, _token) do
@@ -58,11 +58,11 @@ defmodule Identity.Notifier do
   end
 
   @doc """
-  Send an email confirmation `token` and instructions to the given `user`.
+  Send an email confirmation `token` and instructions to the given `email`.
 
   The token passed to this callback is already encoded to be human-readable and URL-safe.
   """
-  @callback confirm_email(user :: User.t(), token :: String.t()) :: :ok | {:error, any}
+  @callback confirm_email(email :: String.t(), token :: String.t()) :: :ok | {:error, any}
 
   @doc """
   Send a password reset `token` and instructions to the given `user`.

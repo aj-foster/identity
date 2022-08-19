@@ -202,7 +202,7 @@ defmodule IdentityTest do
       assert {:ok, _user} =
                Identity.create_email_and_login(user, %{email: email, password: password})
 
-      assert_received {:confirm_email, ^user, token}
+      assert_received {:confirm_email, ^email, token}
       assert {:ok, token} = Base.url_decode64(token, padding: false)
       assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
@@ -562,7 +562,7 @@ defmodule IdentityTest do
 
     test "sends token through notification", %{user: user} do
       assert :ok = Identity.create_email(user, "person@example.com")
-      assert_received {:confirm_email, ^user, token}
+      assert_received {:confirm_email, "person@example.com", token}
       assert {:ok, token} = Base.url_decode64(token, padding: false)
       assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
