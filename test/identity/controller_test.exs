@@ -446,6 +446,18 @@ defmodule Identity.ControllerTest do
       response = html_response(conn, 200)
       assert response =~ "must have the @ sign"
     end
+
+    test "sends token through notification", %{conn: conn, password: password, user: user} do
+      params = %{"email" => %{"email" => "new@example.com", "password" => password}}
+      conn = Identity.Plug.log_in_user(conn, user)
+      post(conn, "/email/new", params)
+
+      assert_received {:confirm_email, "new@example.com", url}
+      token = String.replace(url, ~r|^.*/|, "")
+      assert {:ok, token} = Base.url_decode64(token, padding: false)
+      assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
+      assert user_token.user_id == user.id
+    end
   end
 
   describe "confirm_email/2" do
@@ -461,7 +473,7 @@ defmodule Identity.ControllerTest do
       conn = get(conn, "/email/#{token}")
       assert redirected_to(conn) == "/"
       assert get_flash(conn, :info) =~ "confirmed"
-      assert Repo.get_by(Identity.Schema.Email, email: "new@example.com").confirmed_at
+      assert Repo.get_by(Email, email: "new@example.com").confirmed_at
     end
 
     test "does not confirm email with invalid token", %{conn: conn} do

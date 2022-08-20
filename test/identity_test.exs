@@ -207,6 +207,19 @@ defmodule IdentityTest do
       assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
     end
+
+    test "optionally transforms token", %{email: email, password: password} do
+      user = Factory.insert(:user)
+      fun = fn _ -> "test_token" end
+
+      assert {:ok, _user} =
+               Identity.create_email_and_login(%{email: email, password: password},
+                 confirmation: fun,
+                 user: user
+               )
+
+      assert_received {:confirm_email, _email, "test_token"}
+    end
   end
 
   describe "create_login/2" do
@@ -529,7 +542,7 @@ defmodule IdentityTest do
     end
   end
 
-  describe "create_email/2" do
+  describe "create_email/3" do
     setup do
       %{user: Factory.insert(:user)}
     end
@@ -567,9 +580,15 @@ defmodule IdentityTest do
       assert user_token = Repo.get_by(Email, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
     end
+
+    test "optionally transforms token", %{user: user} do
+      fun = fn _ -> "test_token" end
+      assert :ok = Identity.create_email(user, "person@example.com", confirmation: fun)
+      assert_received {:confirm_email, "person@example.com", "test_token"}
+    end
   end
 
-  describe "create_email/3" do
+  describe "create_email_with_password/4" do
     setup do
       user = Factory.insert(:user)
       password = Factory.valid_user_password()
@@ -579,10 +598,19 @@ defmodule IdentityTest do
     end
 
     test "validates a user's password", %{password: password, user: user} do
-      assert {:error, changeset} = Identity.create_email(user, "person@example.com", "wrong")
+      assert {:error, changeset} =
+               Identity.create_email_with_password(user, "person@example.com", "wrong")
+
       assert "is invalid" in errors_on(changeset).password
 
-      assert :ok = Identity.create_email(user, "person@example.com", password)
+      assert :ok = Identity.create_email_with_password(user, "person@example.com", password)
+    end
+
+    test "optionally transforms token", %{password: password, user: user} do
+      email = "person@example.com"
+      fun = fn _ -> "test_token" end
+      assert :ok = Identity.create_email_with_password(user, email, password, confirmation: fun)
+      assert_received {:confirm_email, "person@example.com", "test_token"}
     end
   end
 
