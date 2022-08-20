@@ -723,7 +723,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       user = conn.assigns[:current_user]
       fun = fn token -> Util.url_for(conn, :confirm_email, token) end
 
-      case Identity.create_email_with_password(user, email, password, confirmation: fun) do
+      case Identity.create_email_with_password(user, email, password, token_url: fun) do
         :ok ->
           conn
           |> Controller.put_flash(
@@ -871,7 +871,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     def create_user(conn, %{"user" => user_params}) do
       fun = fn token -> Util.url_for(conn, :confirm_email, token) end
 
-      case Identity.create_email_and_login(user_params, confirmation: fun) do
+      case Identity.create_email_and_login(user_params, token_url: fun) do
         {:ok, user} ->
           conn
           |> Controller.put_flash(

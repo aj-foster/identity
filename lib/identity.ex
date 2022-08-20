@@ -160,12 +160,12 @@ defmodule Identity do
   another method. Omit the user argument if someone registers for a new account.
 
   If desired, confirmation of the email can be required using the notifier and `confirm_email/1`.
-  Be sure to pass the `confirmation` option to add the correct URL to outgoing emails. See
+  Be sure to pass the `token_url` option to add the correct URL to outgoing emails. See
   `c:Identity.Notifier.confirm_email/2` for more information.
 
   ## Options
 
-    * `:confirmation` (function `String.t() -> String.t()`): Function to confirm a (human-readable,
+    * `:token_url` (function `String.t() -> String.t()`): Function to convert a (human-readable,
       URL-safe) confirmation token into the email confirmation URL. This is necessary for email
       notifiers. Defaults to using the token without embedding it in a URL.
 
@@ -189,7 +189,7 @@ defmodule Identity do
   def create_email_and_login(attrs, opts \\ []) do
     changeset = Changeset.email_and_password(attrs)
     user = opts[:user] || %@user{}
-    confirmation_url_fun = opts[:confirmation] || (& &1)
+    token_url_fun = opts[:token_url] || (& &1)
 
     with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
       email_changeset =
@@ -207,7 +207,7 @@ defmodule Identity do
       |> repo().transaction()
       |> case do
         {:ok, %{email: %Email{email: email, token: encoded_token, user: user}}} ->
-          notifier().confirm_email(email, confirmation_url_fun.(encoded_token))
+          notifier().confirm_email(email, token_url_fun.(encoded_token))
           {:ok, user}
 
         {:error, _phase, changeset, _changes} ->
@@ -520,14 +520,14 @@ defmodule Identity do
 
   This function inserts a new email address record associated with the given user. If desired,
   confirmation of the email can be required using the notifier and `confirm_email/1`. Be sure to
-  pass the `confirmation` option to add the correct URL to outgoing emails. See
+  pass the `token_url` option to add the correct URL to outgoing emails. See
   `c:Identity.Notifier.confirm_email/2` for more information.
 
   See also `create_email_with_password/4` for a variation that requires a password.
 
   ## Options
 
-    * `:confirmation` (function `String.t() -> String.t()`): Function to confirm a (human-readable,
+    * `:token_url` (function `String.t() -> String.t()`): Function to convert a (human-readable,
       URL-safe) confirmation token into the email confirmation URL. This is necessary for email
       notifiers. Defaults to using the token without embedding it in a URL.
 
@@ -540,7 +540,7 @@ defmodule Identity do
   @doc section: :email
   @spec create_email(User.t(), String.t(), keyword) :: :ok | {:error, Ecto.Changeset.t() | any}
   def create_email(user, email, opts \\ []) do
-    confirmation_url_fun = opts[:confirmation] || (& &1)
+    token_url_fun = opts[:token_url] || (& &1)
 
     changeset =
       %Email{}
@@ -548,7 +548,7 @@ defmodule Identity do
       |> Ecto.Changeset.put_assoc(:user, user)
 
     with {:ok, %Email{email: email, token: encoded_token}} <- repo().insert(changeset) do
-      notifier().confirm_email(email, confirmation_url_fun.(encoded_token))
+      notifier().confirm_email(email, token_url_fun.(encoded_token))
     end
   end
 

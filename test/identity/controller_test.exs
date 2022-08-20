@@ -1,6 +1,8 @@
 defmodule Identity.ControllerTest do
   use Identity.ConnCase, async: true
 
+  alias Identity.Schema.Email
+
   describe "new_session/2" do
     test "renders login form", %{conn: conn} do
       conn = get(conn, "/session/new")

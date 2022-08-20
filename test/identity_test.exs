@@ -214,7 +214,7 @@ defmodule IdentityTest do
 
       assert {:ok, _user} =
                Identity.create_email_and_login(%{email: email, password: password},
-                 confirmation: fun,
+                 token_url: fun,
                  user: user
                )
 
@@ -583,7 +583,7 @@ defmodule IdentityTest do
 
     test "optionally transforms token", %{user: user} do
       fun = fn _ -> "test_token" end
-      assert :ok = Identity.create_email(user, "person@example.com", confirmation: fun)
+      assert :ok = Identity.create_email(user, "person@example.com", token_url: fun)
       assert_received {:confirm_email, "person@example.com", "test_token"}
     end
   end
@@ -609,7 +609,7 @@ defmodule IdentityTest do
     test "optionally transforms token", %{password: password, user: user} do
       email = "person@example.com"
       fun = fn _ -> "test_token" end
-      assert :ok = Identity.create_email_with_password(user, email, password, confirmation: fun)
+      assert :ok = Identity.create_email_with_password(user, email, password, token_url: fun)
       assert_received {:confirm_email, "person@example.com", "test_token"}
     end
   end
