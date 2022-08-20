@@ -2,6 +2,7 @@ defmodule Identity.ControllerTest do
   use Identity.ConnCase, async: true
 
   alias Identity.Schema.Email
+  alias Identity.Schema.PasswordToken
 
   describe "new_session/2" do
     test "renders login form", %{conn: conn} do
@@ -320,7 +321,12 @@ defmodule Identity.ControllerTest do
 
       assert redirected_to(conn) == "/"
       assert get_flash(conn, :info) =~ "If your email is in our system"
-      assert Repo.get_by!(Identity.Schema.PasswordToken, user_id: user.id)
+
+      assert_received {:reset_password, ^user, url}
+      token = String.replace(url, ~r|^.*/|, "")
+      assert {:ok, token} = Base.url_decode64(token, padding: false)
+      assert reset_token = Repo.get_by!(PasswordToken, hashed_token: :crypto.hash(:sha256, token))
+      assert reset_token.user_id == user.id
     end
 
     test "does not send reset password token if email is invalid", %{conn: conn} do

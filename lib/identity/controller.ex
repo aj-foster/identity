@@ -568,8 +568,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :password_reset
     @spec create_password_token(Conn.t(), Conn.params()) :: Conn.t()
     def create_password_token(conn, %{"password_token" => %{"email" => email}}) do
+      token_url = fn token -> Util.url_for(conn, :new_password, token) end
+
       if user = Identity.get_user_by_email(email) do
-        Identity.request_password_reset(user)
+        Identity.request_password_reset(user, token_url: token_url)
       end
 
       Controller.put_flash(
@@ -721,9 +723,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @spec create_email(Conn.t(), Conn.params()) :: Conn.t()
     def create_email(conn, %{"email" => %{"email" => email, "password" => password}}) do
       user = conn.assigns[:current_user]
-      fun = fn token -> Util.url_for(conn, :confirm_email, token) end
+      token_url = fn token -> Util.url_for(conn, :confirm_email, token) end
 
-      case Identity.create_email_with_password(user, email, password, token_url: fun) do
+      case Identity.create_email_with_password(user, email, password, token_url: token_url) do
         :ok ->
           conn
           |> Controller.put_flash(
@@ -869,9 +871,9 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :user
     @spec create_user(Conn.t(), Conn.params()) :: Conn.t()
     def create_user(conn, %{"user" => user_params}) do
-      fun = fn token -> Util.url_for(conn, :confirm_email, token) end
+      token_url = fn token -> Util.url_for(conn, :confirm_email, token) end
 
-      case Identity.create_email_and_login(user_params, token_url: fun) do
+      case Identity.create_email_and_login(user_params, token_url: token_url) do
         {:ok, user} ->
           conn
           |> Controller.put_flash(

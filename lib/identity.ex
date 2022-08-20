@@ -657,6 +657,12 @@ defmodule Identity do
   `reset_password/2`. See `c:Identity.Notifier.reset_password/2` for more information about the
   user notification.
 
+  ## Options
+
+    * `:token_url` (function `String.t() -> String.t()`): Function to convert a (human-readable,
+      URL-safe) reset token into the password reset URL. This is necessary for email notifiers.
+      Defaults to using the token without embedding it in a URL.
+
   ## Examples
 
       iex> Identity.request_password_reset(user)
@@ -664,14 +670,15 @@ defmodule Identity do
 
   """
   @doc section: :password_reset
-  @spec request_password_reset(User.t()) :: :ok | {:error, any}
-  def request_password_reset(%@user{} = user) do
+  @spec request_password_reset(User.t(), keyword) :: :ok | {:error, any}
+  def request_password_reset(%@user{} = user, opts \\ []) do
     %PasswordToken{token: encoded_token} =
       PasswordToken.initiate_reset_changeset()
       |> Ecto.Changeset.put_assoc(:user, user)
       |> repo().insert!()
 
-    notifier().reset_password(user, encoded_token)
+    token_url_fun = opts[:token_url] || (& &1)
+    notifier().reset_password(user, token_url_fun.(encoded_token))
   end
 
   @doc """

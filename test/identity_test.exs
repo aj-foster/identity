@@ -676,6 +676,12 @@ defmodule IdentityTest do
       assert user_token = Repo.get_by(PasswordToken, hashed_token: :crypto.hash(:sha256, token))
       assert user_token.user_id == user.id
     end
+
+    test "optionally transforms token", %{user: user} do
+      fun = fn _ -> "test_token" end
+      assert :ok = Identity.request_password_reset(user, token_url: fun)
+      assert_received {:reset_password, ^user, "test_token"}
+    end
   end
 
   describe "get_user_by_password_token/1" do
