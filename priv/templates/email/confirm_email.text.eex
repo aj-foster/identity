@@ -1,0 +1,6 @@
+We're excited to have you get started. First, please confirm your email
+address by using the link below:
+
+  <%= @url %>
+
+If you have any questions, just reach out to us.

@@ -1,0 +1,7 @@
+<%= @title %>
+
+<%= @inner_content %>
+---
+
+This is an automated email created by a recent action on your account.
+If this email was sent in error, please contact us.

@@ -38,12 +38,14 @@ defmodule Identity.MixProject do
 
   defp deps do
     [
+      {:bamboo, "~> 2.0", optional: true},
       {:bcrypt_elixir, "~> 3.0"},
       {:ecto_sql, "~> 3.0"},
       {:eqrcode, "~> 0.1.10", optional: true},
       {:ex_doc, "~> 0.28", only: :dev},
       {:ex_machina, "~> 2.7.0", only: [:dev, :test]},
       {:jason, "~> 1.0", only: [:dev, :test]},
+      {:mime, "~> 1.0 or ~> 2.0", override: true, optional: true},
       {:mix_test_watch, "~> 1.0", only: [:test], runtime: false},
       {:nimble_totp, "~> 0.1", optional: true},
       {:phoenix, "~> 1.4", optional: true},
@@ -75,6 +77,7 @@ defmodule Identity.MixProject do
         OAuth: &(&1[:section] == :oauth)
       ],
       groups_for_modules: [
+        Notifiers: ~r/Identity.Notifier/,
         Schemas: [Identity.User, ~r/Identity.Schema/]
       ]
     ]
