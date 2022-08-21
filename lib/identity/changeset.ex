@@ -42,9 +42,9 @@ defmodule Identity.Changeset do
   @doc """
   Changeset for enabling 2FA on an `Identity.Schema.BasicLogin`.
 
-  This changeset operates on `t:BasicLogin.otp_secret_and_code_data/0` and ensures the verification
-  code is valid against the secret. If a secret was not supplied in the attributes, a new one is
-  generated. See `Identity.Schema.BasicLogin.validate_otp_code/1` for more information.
+  This changeset operates on `t:Identity.Schema.BasicLogin.otp_secret_and_code_data/0` and ensures
+  the verification code is valid against the secret. If a secret was not supplied in the attributes,
+  a new one is generated. See `Identity.Schema.BasicLogin.validate_otp_code/1` for more information.
   """
   @spec otp_secret_and_code(map) :: Ecto.Changeset.t(BasicLogin.otp_secret_and_code_data())
   def otp_secret_and_code(attrs \\ %{}) do

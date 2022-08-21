@@ -79,8 +79,9 @@ defmodule Identity.MixProject do
         OAuth: &(&1[:section] == :oauth)
       ],
       groups_for_modules: [
+        Schemas: [Identity.User, ~r/Identity.Schema/],
         Notifiers: ~r/Identity.Notifier/,
-        Schemas: [Identity.User, ~r/Identity.Schema/]
+        Internal: [Identity.Changeset, Identity.Token]
       ]
     ]
   end
