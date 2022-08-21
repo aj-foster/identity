@@ -20,6 +20,7 @@ defmodule Identity.Schema.Email do
   @expiration_days 7
   @user user_schema()
 
+  @typedoc "Struct representing a user's email address."
   @type t :: %__MODULE__{
           confirmed_at: DateTime.t() | nil,
           email: String.t(),
@@ -54,7 +55,7 @@ defmodule Identity.Schema.Email do
   # Changesets
   #
 
-  @doc "Register a new email address."
+  @doc "Register a new email address and create a confirmation token."
   @spec registration_changeset(%__MODULE__{}, map) :: Changeset.t(%__MODULE__{})
   def registration_changeset(struct, attrs) do
     struct
@@ -63,6 +64,7 @@ defmodule Identity.Schema.Email do
     |> put_token()
   end
 
+  @doc "Validate email structure and uniqueness."
   @spec validate_email(Changeset.t(email_data)) :: Changeset.t(email_data)
   def validate_email(changeset) do
     changeset
@@ -139,7 +141,7 @@ defmodule Identity.Schema.Email do
     |> select([user: u], u)
   end
 
-  @doc "Confirm an email by its `token`."
+  @doc "Confirm an email by its hashed `token`."
   @spec confirm_email_query(String.t()) :: {:ok, Ecto.Query.t()} | :error
   def confirm_email_query(token) do
     with {:ok, decoded_token} <- Base.url_decode64(token, padding: false) do
@@ -157,7 +159,15 @@ defmodule Identity.Schema.Email do
     end
   end
 
-  @doc "List all emails for a user, optionally returning only confirmed emails."
+  @doc """
+  List all emails for a user, optionally returning only confirmed emails.
+
+  ## Options
+
+    * `:confirmed` (boolean): When `true`, return only emails that have been confirmed. Defaults to
+      `false`.
+
+  """
   @spec list_emails_by_user_query(Ecto.UUID.t(), keyword) :: Ecto.Query.t()
   def list_emails_by_user_query(user_id, opts \\ []) do
     from(t in __MODULE__, as: :email)

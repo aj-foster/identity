@@ -19,6 +19,7 @@ defmodule Identity.Schema.PasswordToken do
   @expiration_days 1
   @user user_schema()
 
+  @typedoc "Struct representing password reset in progress."
   @type t :: %__MODULE__{
           id: Ecto.UUID.t(),
           hashed_token: binary,

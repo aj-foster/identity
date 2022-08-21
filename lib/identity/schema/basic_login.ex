@@ -7,6 +7,16 @@ defmodule Identity.Schema.BasicLogin do
   > This struct is fully managed by Identity and its migrations. If you find yourself working with
   > this struct directly or changing the underlying table, please share your use case with the
   > maintainers of the library.
+
+  ## Common Options
+
+  The following options are available to several functions in this module:
+
+    * `:hash_password` - Hashes the password so it can be stored securely in the database and
+      ensures the password field is cleared to prevent leaks in the logs. If password hashing is
+      not needed and clearing the password field is not desired (like when using this changeset for
+      validations on a LiveView form), this option can be set to `false`. Defaults to `true`.
+
   """
   use Ecto.Schema
   import Ecto.Query
@@ -74,13 +84,7 @@ defmodule Identity.Schema.BasicLogin do
 
   ## Options
 
-    * `:hash_password` - Hashes the password so it can be stored securely
-      in the database and ensures the password field is cleared to prevent
-      leaks in the logs. If password hashing is not needed and clearing the
-      password field is not desired (like when using this changeset for
-      validations on a LiveView form), this option can be set to `false`.
-      Defaults to `true`.
-
+  This function supports the **Common Options**.
   """
   @spec registration_changeset(%__MODULE__{}, map, Keyword.t()) :: Changeset.t(t)
   def registration_changeset(login, attrs, opts \\ []) do
@@ -96,13 +100,7 @@ defmodule Identity.Schema.BasicLogin do
 
   ## Options
 
-    * `:hash_password` - Hashes the password so it can be stored securely
-      in the database and ensures the password field is cleared to prevent
-      leaks in the logs. If password hashing is not needed and clearing the
-      password field is not desired (like when using this changeset for
-      validations on a LiveView form), this option can be set to `false`.
-      Defaults to `true`.
-
+  This function supports the **Common Options**.
   """
   @spec validate_password(Changeset.t(password_data), Keyword.t()) :: Changeset.t(password_data)
   def validate_password(changeset, opts) do
@@ -131,13 +129,7 @@ defmodule Identity.Schema.BasicLogin do
 
   ## Options
 
-    * `:hash_password` - Hashes the password so it can be stored securely
-      in the database and ensures the password field is cleared to prevent
-      leaks in the logs. If password hashing is not needed and clearing the
-      password field is not desired (like when using this changeset for
-      validations on a LiveView form), this option can be set to `false`.
-      Defaults to `true`.
-
+  This function supports the **Common Options**.
   """
   @spec password_changeset(t, map, Keyword.t()) :: Changeset.t(t)
   def password_changeset(login, attrs, opts \\ []) do

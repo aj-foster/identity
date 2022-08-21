@@ -18,6 +18,7 @@ defmodule Identity.Schema.Session do
   @expiration_seconds Application.compile_env(:identity, :remember_me)[:max_age] || 5_184_000
   @user user_schema()
 
+  @typedoc "Struct representing a user's login session."
   @type t :: %__MODULE__{
           client: String.t(),
           id: Ecto.UUID.t(),
