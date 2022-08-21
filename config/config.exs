@@ -3,7 +3,11 @@ import Config
 
 config :identity, Identity.Notifier.Bamboo,
   from: "test@example.com",
-  mailer: Identity.Test.Mailer
+  mailer: Identity.Test.BambooMailer
+
+config :identity, Identity.Notifier.Swoosh,
+  from: "test@example.com",
+  mailer: Identity.Test.SwooshMailer
 
 config :identity, Identity.Test.Endpoint,
   check_origin: false,
@@ -14,7 +18,8 @@ config :identity, Identity.Test.Endpoint,
   server: true,
   url: [host: "localhost"]
 
-config :identity, Identity.Test.Mailer, adapter: Bamboo.TestAdapter
+config :identity, Identity.Test.BambooMailer, adapter: Bamboo.TestAdapter
+config :identity, Identity.Test.SwooshMailer, adapter: Swoosh.Adapters.Test
 
 config :identity, Identity.Test.Repo,
   name: Identity.Test.Repo,

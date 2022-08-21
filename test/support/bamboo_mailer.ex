@@ -1,3 +1,3 @@
-defmodule Identity.Test.Mailer do
+defmodule Identity.Test.BambooMailer do
   use Bamboo.Mailer, otp_app: :identity
 end
