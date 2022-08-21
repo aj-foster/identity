@@ -55,6 +55,7 @@ defmodule Identity.Schema.BasicLogin do
     field :password, :string, virtual: true, redact: true
 
     embeds_many :backup_codes, BackupCode, on_replace: :delete do
+      @moduledoc false
       field :code, :string, redact: true
       field :used_at, :utc_datetime_usec
     end
