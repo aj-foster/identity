@@ -30,7 +30,7 @@ config :identity, Identity.Test.Repo,
 
 config :identity,
   ecto_repos: [Identity.Test.Repo],
-  notifier: Identity.Test.Notifier,
+  notifier: Identity.Notifier.Test,
   repo: Identity.Test.Repo
 
 config :ueberauth, Ueberauth, providers: []
