@@ -21,6 +21,7 @@ Some of the additional features include:
 * Listing and deleting sessions
 * Multiple OAuth providers per user
 * Both email/password and OAuth for the same user
+* Out-of-the-box implementations of email notifications for [Bamboo](https://hexdocs.pm/bamboo/) and [Swoosh](https://hexdocs.pm/swoosh/)
 
 All features are optional.
 Integrate what you want, and ignore the rest!

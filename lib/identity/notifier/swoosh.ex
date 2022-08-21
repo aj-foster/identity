@@ -3,7 +3,7 @@ if Code.ensure_loaded?(Swoosh) do
     @moduledoc """
     Notifier that sends emails using `Swoosh`.
 
-    > #### Warning {.warning}
+    > #### Warning {:.warning}
     >
     > This module requires `Swoosh` to be installed. If you install Swoosh after Identity, then it
     > may be necessary to recompile the entire `:identity` dependency (not just your application).
@@ -13,6 +13,19 @@ if Code.ensure_loaded?(Swoosh) do
     For more information about notifiers, see `Identity.Notifier`.
 
     ## Configuration
+
+    The following configuration options can be passed to the module via application configuration:
+
+        config :identity, Identity.Notifier.Swoosh,
+          from: "no-reply@my.app",
+          mailer: MyApp.Mailer
+
+    | Option | Type | Description |
+    | `from` | `string` | Email to use as the "from" address for outgoing emails. **Required**. |
+    | `layout` | `module` or `{module, atom}` | Phoenix View (`module`) and template name (`atom`) to use while rendering email layout. If a module is provided, the `:email` template (`email.html.eex` and `email.text.eex`) will be used by default, same as `{module, :email}`. Defaults to Identity-provided templates. |
+    | `mailer` | `module` | Swoosh Mailer module to use for delivery. The module must `use Swoosh.Mailer`. **Required**. |
+    | `view` | `module` | Phoenix View to use while rendering email contents. Must provide `confirm_email` and `reset_password` templates for HTML and text emails. Defaults to Identity-provided templates. |
+
     """
     use Identity.Notifier
     require Logger
