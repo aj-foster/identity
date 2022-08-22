@@ -11,7 +11,7 @@ defmodule Identity.Config do
   | Option | Type | Scope | Description |
   | `notifier` | `module` | Runtime | Name of the module that implements the `Identity.Notifier` behaviour. This module will be called to send notifications to users. Default: `Identity.Notifier.Log` |
   | `remember_me` | `keyword` | Runtime | Cookie options for the "remember me" cookie. See `Identity.Plug` for more details. |
-  | `repo` | `module` | Runtime | Name of the Ecto.Repo module for your application, for example `MyApp.Repo` |
+  | `repo` | `module` | Runtime | Name of the Ecto.Repo module for your application, for example `MyApp.Repo`. |
   | `user` | `module` | Compilation | Name of the module that contains your User schema, for example `MyApp.Accounts.User`. After changing this option, it is necessary to run `mix deps.compile identity --force`. See `Identity.User` for more information. |
 
   ## Compilation Configuration
