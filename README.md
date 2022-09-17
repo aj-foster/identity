@@ -1,7 +1,5 @@
 # Identity
 
-<!-- moduledoc -->
-
 Rapid authentication for new Elixir projects.
 
 Identity takes the best of Phoenix's `mix phx.gen.auth`, combines the power of [Ueberauth](https://github.com/ueberauth/ueberauth) for OAuth, and adds additional features like multi-factor authentication.

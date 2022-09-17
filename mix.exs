@@ -1,10 +1,13 @@
 defmodule Identity.MixProject do
   use Mix.Project
 
+  @version "0.0.1-beta.0"
+  @source_url "https://github.com/aj-foster/identity"
+
   def project do
     [
       app: :identity,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -13,7 +16,8 @@ defmodule Identity.MixProject do
       homepage_url: "https://github.com/aj-foster/identity",
       aliases: aliases(),
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      package: package()
     ]
   end
 
@@ -45,7 +49,7 @@ defmodule Identity.MixProject do
       {:ex_doc, "~> 0.28", only: :dev},
       {:ex_machina, "~> 2.7.0", only: [:dev, :test]},
       {:jason, "~> 1.0", optional: true},
-      {:mime, "~> 1.0 or ~> 2.0", override: true, optional: true},
+      {:mime, "~> 1.0 or ~> 2.0", optional: true},
       {:mix_test_watch, "~> 1.0", only: [:test], runtime: false},
       {:nimble_totp, "~> 0.1", optional: true},
       {:phoenix, "~> 1.4", optional: true},
@@ -89,4 +93,22 @@ defmodule Identity.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp package do
+    [
+      description: "Rapid authentication for new Elixir projects",
+      files: [
+        "guides",
+        "lib",
+        "priv",
+        "LICENSE",
+        "mix.exs",
+        "README.md"
+      ],
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url},
+      maintainers: ["AJ Foster"],
+      organization: "ajf"
+    ]
+  end
 end
