@@ -168,7 +168,28 @@ See `Identity.Plug` for more information about the available plugs and their opt
 
 With the use of the `:fetch_identity` plug, you can use the `:current_user` assign to get the currently-authenticated user from a `%Plug.Conn{}` struct.
 
-## Setup Notifications
+## (Optional) Set Up Two-Factor Auth
+
+If you intend to use password-based authentication with your app, two-factor auth can be a great addition.
+This functionality requires two additional dependencies:
+
+```elixir
+def deps do
+  [
+    # ...
+    {:eqrcode, "~> 0.1.10"},
+    {:nimble_totp, "~> 0.1"}
+  ]
+end
+```
+
+Respectively, `eqrcode` allows Identity to generate a QR code for easy 2FA enrollment, while `nimble_totp` handles generating secrets and checking codes.
+After installing these additional dependencies, ensure Identity is recompiled with `mix deps.compile identity --force`.
+
+Routes related to two-factor authentication are already included in the **Add Routes** section above.
+If you use Identity-provided controller actions for login, they will already check if a user is enrolled in two-factor auth and redirect them appropriately.
+
+## (Optional) Set Up Notifications
 
 Some actions require communication with the user, usually via email.
 For this, Identity uses a pluggable notification system.
@@ -191,3 +212,49 @@ config :identity,
 
 Notifiers adhere to the `Identity.Notifier` behaviour.
 Check out that module's documentation for information about creating a custom implementation.
+
+## (Optional) Set Up OAuth
+
+Identity leverages [Ueberauth](https://hexdocs.pm/ueberauth/) and its collection of OAuth strategies.
+To get started, install Ueberauth and the strategies you wish to use:
+
+```elixir
+def deps do
+  [
+    # ...
+    {:ueberauth, "~> 0.10"},
+    {:ueberauth_github, "~> 0.8"}
+  ]
+end
+```
+
+Note that it is common for strategies to require a lower version of Ueberauth than you wish to use.
+Adding `override: true` to the `:ueberauth` dependency may be necessary.
+After installing these additional dependencies, ensure Identity is recompiled with `mix deps.compile identity --force`.
+
+Routes related to OAuth are already included in the **Add Routes** section above.
+Remember to configure each of the Ueberauth strategy libraries according to their documentation.
+
+## (Optional) Add Styles
+
+Identity-provided templates use prefixed CSS classes (`.id_`) for easy styling.
+If you wish to get off-the-ground quickly with some default styles, you can include Identity-provided CSS in your application:
+
+```css
+/* Assuming your CSS is in assets/css/ or similar. */
+@import "../../deps/identity/priv/static/vanilla.css";
+```
+
+If you happen to use Tailwind for styling, there is a tailwind variant as well:
+
+```css
+@import "../../deps/identity/priv/static/tailwind.css";
+```
+
+These styles are minimal in design, and easily overridden with your own CSS.
+
+## Conclusion
+
+By the end of this work, you should have the basis of a feature-rich authentication system for your application.
+Now you can focus on other — more important — things.
+When you're ready to customize how auth looks and works, check out [Progressive Replacement](progressive-replacement.md).
