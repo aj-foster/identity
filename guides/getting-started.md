@@ -42,7 +42,7 @@ Then run the migration:
 $ mix ecto.migrate
 ```
 
-Identity's migrations make liberal use of `create_if_no_exists`, meaning that existing tables (such as `users`) won't cause a problem during migration.
+Identity's migrations make liberal use of `create_if_not_exists`, meaning that existing tables (such as `users`) won't cause a problem during migration.
 However, if there are conflicts, it is possible that Identity will not work as intended:
 
 * As mentioned in `Identity.User`, any `users` table not created by Identity must have a binary (UUID) primary key called `id`.
@@ -166,4 +166,28 @@ end
 Note that Identity-provided controller actions do not require the use of these plugs.
 See `Identity.Plug` for more information about the available plugs and their options.
 
-...
+With the use of the `:fetch_identity` plug, you can use the `:current_user` assign to get the currently-authenticated user from a `%Plug.Conn{}` struct.
+
+## Setup Notifications
+
+Some actions require communication with the user, usually via email.
+For this, Identity uses a pluggable notification system.
+Here are the available notifiers provided by Identity:
+
+| Module | Description |
+| ------ | ----------- |
+| `Identity.Notifier.Log` | Default notifier. Simply logs a message via `Logger`. Great for development use. |
+| `Identity.Notifier.Bamboo` | Email notifier using the [Bamboo](https://hexdocs.pm/bamboo/) library. Requires additional configuration. |
+| `Identity.Notifier.Swoosh` | Email notifier using the [Swoosh](https://hexdocs.pm/swoosh/) library. Requires additional configuration. |
+| `Identity.Notifier.Test` | Test notifier that sends a message to the current process when callbacks are called. Useful for testing purposes. |
+
+To choose which notifier is active for your application, use the `notifier` key in the configuration:
+
+```elixir
+config :identity,
+  # ...
+  notifier: Identity.Notifier.Log  # This is the default
+```
+
+Notifiers adhere to the `Identity.Notifier` behaviour.
+Check out that module's documentation for information about creating a custom implementation.

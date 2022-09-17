@@ -12,6 +12,32 @@ if Code.ensure_loaded?(Swoosh) do
 
     For more information about notifiers, see `Identity.Notifier`.
 
+    ## Usage
+
+    To use this notifier, configure it in the relevant environment (for example, `config/prod.exs`):
+
+        config :identity,
+          # ...
+          notifier: Identity.Notifier.Swoosh
+
+    ## Templates
+
+    Similar to Identity-provided controller actions, this notifier can be used in multiple ways
+    depending on the level of customization desired:
+
+    1. Using Identity-provided views and templates for email layout and contents.
+    2. Using a custom layout view with the Identity-provided view and template for contents.
+    3. Using custom layout and content views.
+
+    In each case, the views are rendered with the following assigns:
+
+    * `:preview`: Brief text that appears in the preview of an email client (not in the email itself).
+    * `:title`: Header text in the body of the email
+    * `:url`: URL for the email's action (confirm email, reset password, etc.).
+
+    The provided templates are generic and do not necessarily confirm to CAN-SPAM or other relevant
+    email requirements.
+
     ## Configuration
 
     The following configuration options can be passed to the module via application configuration:
