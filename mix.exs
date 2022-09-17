@@ -67,7 +67,8 @@ defmodule Identity.MixProject do
       extras: [
         "README.md": [title: "Overview"],
         "guides/getting-started.md": [title: "Getting Started"],
-        "guides/progressive-replacement.md": [title: "Progressive Replacement"]
+        "guides/progressive-replacement.md": [title: "Progressive Replacement"],
+        LICENSE: [title: "License"]
       ],
       groups_for_functions: [
         User: &(&1[:section] == :user),
