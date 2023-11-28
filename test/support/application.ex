@@ -3,7 +3,7 @@ defmodule Identity.Test.Application do
   use Application
 
   def start(_type, _args) do
-    Logger.configure(level: :warn)
+    Logger.configure(level: :warning)
     Identity.Config.load()
 
     children = [

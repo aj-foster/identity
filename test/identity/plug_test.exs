@@ -169,7 +169,7 @@ defmodule Identity.PlugTest do
       conn = conn |> fetch_flash() |> Identity.Plug.redirect_if_unauthenticated([])
       assert conn.halted
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) == "You must log in to access this page."
+      assert conn.assigns[:flash]["error"] == "You must log in to access this page."
     end
 
     test "stores the path to redirect to on GET", %{conn: conn} do
@@ -204,7 +204,7 @@ defmodule Identity.PlugTest do
         |> fetch_flash()
         |> Identity.Plug.redirect_if_unauthenticated(message: "Custom message")
 
-      assert get_flash(conn, :error) == "Custom message"
+      assert conn.assigns[:flash]["error"] == "Custom message"
     end
 
     test "does not redirect if user is authenticated", %{conn: conn, user: user} do
@@ -227,7 +227,7 @@ defmodule Identity.PlugTest do
 
       assert conn.halted
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) == "You must log in to access this page."
+      assert conn.assigns[:flash]["error"] == "You must log in to access this page."
     end
   end
 
@@ -236,7 +236,7 @@ defmodule Identity.PlugTest do
       conn = conn |> fetch_flash() |> Identity.Plug.require_pending_login([])
       assert conn.halted
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) == "You must log in to access this page."
+      assert conn.assigns[:flash]["error"] == "You must log in to access this page."
     end
 
     test "redirects if the login is not pending", %{conn: conn, user: user} do
@@ -248,7 +248,7 @@ defmodule Identity.PlugTest do
 
       assert conn.halted
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) == "You must log in to access this page."
+      assert conn.assigns[:flash]["error"] == "You must log in to access this page."
     end
 
     test "stores the path to redirect to on GET", %{conn: conn} do
@@ -283,7 +283,7 @@ defmodule Identity.PlugTest do
         |> fetch_flash()
         |> Identity.Plug.require_pending_login(message: "Custom message")
 
-      assert get_flash(conn, :error) == "Custom message"
+      assert conn.assigns[:flash]["error"] == "Custom message"
     end
 
     test "does not redirect if the login is pending", %{conn: conn, user: user} do

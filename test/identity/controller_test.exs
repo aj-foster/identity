@@ -275,7 +275,7 @@ defmodule Identity.ControllerTest do
         |> post("/user/2fa/new", params)
 
       assert html_response(conn, 200) =~ "Use the QR code below"
-      assert get_flash(conn, :error) =~ "code invalid"
+      assert conn.assigns[:flash]["error"] =~ "code invalid"
       refute Identity.enabled_2fa?(user)
     end
   end
@@ -291,7 +291,7 @@ defmodule Identity.ControllerTest do
         |> delete("/user/2fa")
 
       assert redirected_to(conn) == "/user/2fa"
-      assert get_flash(conn, :info) =~ "disabled"
+      assert conn.assigns[:flash]["info"] =~ "disabled"
       refute Identity.enabled_2fa?(user)
     end
 
@@ -302,7 +302,7 @@ defmodule Identity.ControllerTest do
         |> delete("/user/2fa")
 
       assert redirected_to(conn) == "/user/2fa"
-      assert get_flash(conn, :error) =~ "not found"
+      assert conn.assigns[:flash]["error"] =~ "not found"
     end
   end
 
@@ -320,7 +320,7 @@ defmodule Identity.ControllerTest do
       conn = post(conn, "/password/new", %{"password_token" => %{"email" => email}})
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :info) =~ "If your email is in our system"
+      assert conn.assigns[:flash]["info"] =~ "If your email is in our system"
 
       assert_received {:reset_password, ^user, url}
       token = String.replace(url, ~r|^.*/|, "")
@@ -334,7 +334,7 @@ defmodule Identity.ControllerTest do
         post(conn, "/password/new", %{"password_token" => %{"email" => "unknown@example.com"}})
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :info) =~ "If your email is in our system"
+      assert conn.assigns[:flash]["info"] =~ "If your email is in our system"
       assert Repo.all(Identity.Schema.PasswordToken) == []
     end
   end
@@ -352,7 +352,7 @@ defmodule Identity.ControllerTest do
     test "does not render reset password with invalid token", %{conn: conn} do
       conn = get(conn, "/password/faketoken")
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "Reset password link is invalid or it has expired"
+      assert conn.assigns[:flash]["error"] =~ "Reset password link is invalid or it has expired"
     end
   end
 
@@ -377,7 +377,7 @@ defmodule Identity.ControllerTest do
 
       assert redirected_to(conn) == "/session/new"
       refute get_session(conn, :user_token)
-      assert get_flash(conn, :info) =~ "Password reset successfully"
+      assert conn.assigns[:flash]["info"] =~ "Password reset successfully"
       assert Identity.get_user_by_email_and_password(email, "new valid password")
     end
 
@@ -401,7 +401,7 @@ defmodule Identity.ControllerTest do
     test "does not reset password with invalid token", %{conn: conn} do
       conn = put(conn, "/password/faketoken")
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "Reset password link is invalid or it has expired"
+      assert conn.assigns[:flash]["error"] =~ "Reset password link is invalid or it has expired"
     end
   end
 
@@ -433,7 +433,7 @@ defmodule Identity.ControllerTest do
       conn = post(conn, "/email/new", params)
 
       assert redirected_to(conn) == "/email/new"
-      assert get_flash(conn, :info) =~ "A link to confirm"
+      assert conn.assigns[:flash]["info"] =~ "A link to confirm"
       assert Identity.get_user_by_email("new@example.com")
     end
 
@@ -480,14 +480,16 @@ defmodule Identity.ControllerTest do
     test "confirms email address", %{conn: conn, token: token} do
       conn = get(conn, "/email/#{token}")
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :info) =~ "confirmed"
+      assert conn.assigns[:flash]["info"] =~ "confirmed"
       assert Repo.get_by(Email, email: "new@example.com").confirmed_at
     end
 
     test "does not confirm email with invalid token", %{conn: conn} do
       conn = get(conn, "/email/faketoken")
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "Email confirmation link is invalid or it has expired"
+
+      assert conn.assigns[:flash]["error"] =~
+               "Email confirmation link is invalid or it has expired"
     end
   end
 
@@ -520,7 +522,7 @@ defmodule Identity.ControllerTest do
         |> delete("/user/email", %{"email" => email})
 
       assert redirected_to(conn) == "/"
-      refute get_flash(conn, :error)
+      refute conn.assigns[:flash]["error"]
       refute Identity.get_user_by_email(email)
     end
 
@@ -537,7 +539,7 @@ defmodule Identity.ControllerTest do
         |> delete("/user/email", %{"email" => email_two})
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "at least one"
+      assert conn.assigns[:flash]["error"] =~ "at least one"
       refute Identity.get_user_by_email(email)
       assert Identity.get_user_by_email(email_two)
     end
@@ -552,7 +554,7 @@ defmodule Identity.ControllerTest do
         |> delete("/user/email", %{"email" => email.email})
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "not found"
+      assert conn.assigns[:flash]["error"] =~ "not found"
       assert Identity.get_user_by_email(email.email)
     end
 
@@ -563,7 +565,7 @@ defmodule Identity.ControllerTest do
         |> delete("/user/email", %{"email" => "fake@example.com"})
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "not found"
+      assert conn.assigns[:flash]["error"] =~ "not found"
     end
   end
 
@@ -639,7 +641,7 @@ defmodule Identity.ControllerTest do
 
       assert redirected_to(new_conn) == "/user/password"
       assert get_session(new_conn, :user_token) != get_session(conn, :user_token)
-      assert get_flash(new_conn, :info) =~ "Password updated successfully"
+      assert new_conn.assigns[:flash]["info"] =~ "Password updated successfully"
       assert Identity.get_user_by_email_and_password(email, new_password)
     end
 
@@ -696,7 +698,7 @@ defmodule Identity.ControllerTest do
         |> get("/auth/something/callback")
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "Something"
+      assert conn.assigns[:flash]["error"] =~ "Something"
     end
 
     test "logs in a new user", %{auth: auth, conn: conn} do
@@ -705,7 +707,7 @@ defmodule Identity.ControllerTest do
         |> get("/auth/something/callback")
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :info) =~ "logged in"
+      assert conn.assigns[:flash]["info"] =~ "logged in"
       token = get_session(conn, :user_token)
       assert %Identity.User{} = Identity.get_user_by_session(token)
     end
@@ -718,7 +720,7 @@ defmodule Identity.ControllerTest do
         |> get("/auth/something/callback")
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :info) =~ "added new login"
+      assert conn.assigns[:flash]["info"] =~ "added new login"
       assert Identity.get_user_by_oauth(auth).id == user.id
     end
 
@@ -738,7 +740,7 @@ defmodule Identity.ControllerTest do
         |> get("/auth/something/callback")
 
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :error) =~ "already associated"
+      assert conn.assigns[:flash]["error"] =~ "already associated"
       refute Identity.get_user_by_oauth(auth).id == user.id
     end
   end
