@@ -26,7 +26,7 @@ Some of the additional nice-to-have features include:
 
 ## Try It Out
 
-If you want to integrate Identity into an existing application, see [Getting Started](docs/getting-started.md).
+If you want to integrate Identity into an existing application, see [Getting Started](guides/getting-started.md).
 If you want to quickly see what Identity can do, follow these abbreviated instructions:
 
 1. Generate a new Phoenix app using `mix phx.new` (learn more [here](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.New.html)).
@@ -59,7 +59,7 @@ What if something is implemented incorrectly?
 What if it's unsafe?
 
 Identity's goal is to allow developers to **get started quickly** and also **customize the experience** when time allows later on.
-Through [Progressive Replacement](docs/progressive-replacement.md), Identity's out-of-the-box features can gradually be replaced with custom implementations as the application matures.
+Through [Progressive Replacement](guides/progressive-replacement.md), Identity's out-of-the-box features can gradually be replaced with custom implementations as the application matures.
 
 > Identity is made to eventually be replaced, but only when the developer is ready.
 
