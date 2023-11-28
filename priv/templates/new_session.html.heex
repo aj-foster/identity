@@ -1,7 +1,7 @@
 <div class="id_wrapper id_session_new">
   <h2 class="id_title">Log in</h2>
 
-  <.form let={f} for={:session} action={path_for(@conn, :create_session)}>
+  <.form :let={f} for={%{}} as={:session} action={path_for(@conn, :create_session)}>
     <%= if @error do %>
       <div class="id_error_message">
         <p><%= @error %></p>

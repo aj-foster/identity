@@ -1,7 +1,7 @@
 <div class="id_wrapper id_user_new">
   <h2 class="id_title">Create an account</h2>
 
-  <.form let={f} for={@changeset} action={path_for(@conn, :create_user)} as={:user}>
+  <.form :let={f} for={@changeset} action={path_for(@conn, :create_user)} as={:user}>
     <%= if @changeset.action do %>
       <div class="id_error_message">
         <p>Something went wrong. Please check the errors below.</p>

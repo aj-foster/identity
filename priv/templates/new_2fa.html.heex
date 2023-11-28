@@ -16,7 +16,7 @@
     <pre><code><%= @otp_secret %></code></pre>
   </div>
 
-  <.form let={f} for={@changeset} action={path_for(@conn, :create_2fa)} as={:mfa}>
+  <.form :let={f} for={@changeset} action={path_for(@conn, :create_2fa)} as={:mfa}>
     <div class="id_field id_field_text">
       <%= label(f, :otp_code, "Verification code", class: "id_text_label") %>
       <%= text_input(f, :otp_code, required: true, class: "id_text_input") %>
