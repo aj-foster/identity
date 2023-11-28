@@ -1007,7 +1007,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       @doc section: :oauth
       @spec oauth_callback(Conn.t(), Conn.params()) :: Conn.t()
       def oauth_callback(%{assigns: %{ueberauth_failure: failure}} = conn, _params) do
-        Logger.warn("Error during OAuth callback: \n#{inspect(failure)}")
+        Logger.warning("Error during OAuth callback: \n#{inspect(failure)}")
         message = Enum.map_join(failure.errors, "; ", fn error -> error.message end)
 
         conn
@@ -1023,7 +1023,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
             |> Identity.Plug.log_in_and_redirect_user(user)
 
           {:error, changeset} ->
-            Logger.warn("Error during OAuth callback: \n#{inspect(changeset)}")
+            Logger.warning("Error during OAuth callback: \n#{inspect(changeset)}")
 
             conn
             |> put_flash(:error, "An error occurred while saving login")
@@ -1044,7 +1044,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
             |> redirect(to: "/")
 
           {:error, changeset} ->
-            Logger.warn("Error during OAuth callback: \n#{inspect(changeset)}")
+            Logger.warning("Error during OAuth callback: \n#{inspect(changeset)}")
 
             conn
             |> put_flash(:error, "An error occurred while saving login")
