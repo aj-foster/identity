@@ -114,7 +114,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     plug :fetch_session
     plug :fetch_flash
-    plug :put_new_view, Identity.Phoenix.View
+    plug :put_new_view, Identity.Phoenix.HTML
 
     plug :fetch_identity
     plug :get_user_by_password_token when action in [:new_password, :create_password]
