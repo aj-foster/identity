@@ -48,11 +48,12 @@ if Code.ensure_loaded?(Swoosh) do
 
     | Option | Type | Description |
     | `from` | `string` | Email to use as the "from" address for outgoing emails. **Required**. |
-    | `layout` | `module` or `{module, atom}` | Phoenix View (`module`) and template name (`atom`) to use while rendering email layout. If a module is provided, the `:email` template (`email.html.eex` and `email.text.eex`) will be used by default, same as `{module, :email}`. Defaults to Identity-provided templates. |
+    | `html` | `module` | Module to use while rendering email contents. Must provide `confirm_email_html/1`, `confirm_email_text/1`, `reset_password_html/1`, and `reset_password_text/1` template functions (such as those provided by `Phoenix.Component.embed_templates/2` with the `suffix` option). Defaults to Identity-provided templates. |
+    | `layout` | `module` | HTML module with embedded template functions to use while rendering email layouts. The provided module must have `email_html/1` and `email_text/1` functions that accept assigns (such as those provided by `Phoenix.Component.embed_templates/2` with the `suffix` option). Defaults to Identity-provided templates. |
     | `mailer` | `module` | Swoosh Mailer module to use for delivery. The module must `use Swoosh.Mailer`. **Required**. |
-    | `view` | `module` | Phoenix View to use while rendering email contents. Must provide `confirm_email` and `reset_password` templates for HTML and text emails. Defaults to Identity-provided templates. |
 
     """
+    require Phoenix.Component
     use Identity.Notifier
     require Logger
 
@@ -65,7 +66,7 @@ if Code.ensure_loaded?(Swoosh) do
       base()
       |> Swoosh.Email.to([email])
       |> Swoosh.Email.subject("Confirm Your Email Address")
-      |> Phoenix.Swoosh.render_body(:confirm_email,
+      |> render_body(:confirm_email,
         preview: "An email was added to your account. Please click to confirm it.",
         title: "Email Confirmation",
         url: url
@@ -84,7 +85,7 @@ if Code.ensure_loaded?(Swoosh) do
       base()
       |> Swoosh.Email.to(emails)
       |> Swoosh.Email.subject("Finish Resetting Your Password")
-      |> Phoenix.Swoosh.render_body(:reset_password,
+      |> render_body(:reset_password,
         preview: "Someone asked to reset your password. Please click to continue.",
         title: "Password Reset",
         url: url
@@ -103,8 +104,41 @@ if Code.ensure_loaded?(Swoosh) do
     @spec base :: Swoosh.Email.t()
     defp base do
       Swoosh.Email.new(from: from_address())
-      |> Phoenix.Swoosh.put_layout(layout_view())
-      |> Phoenix.Swoosh.put_view(view())
+    end
+
+    @spec render_body(Swoosh.Email.t(), atom, keyword) :: Swoosh.Email.t()
+    defp render_body(email, template, assigns) do
+      layout_module = layout_html()
+      template_module = template_html()
+
+      html_heex = apply(template_module, String.to_atom("#{template}_html"), [assigns])
+
+      html =
+        if layout_module do
+          apply(layout_module, :email_html, inner_content: html_heex, title: assigns[:title])
+        else
+          html_heex
+        end
+
+      text_heex = apply(template_module, String.to_atom("#{template}_text"), [assigns])
+
+      text =
+        if layout_module do
+          apply(layout_module, :email_text, inner_content: text_heex, title: assigns[:title])
+        else
+          text_heex
+        end
+
+      email
+      |> Swoosh.Email.html_body(render_heex(html))
+      |> Swoosh.Email.text_body(render_heex(text))
+    end
+
+    @spec render_heex(term) :: String.t()
+    defp render_heex(template) do
+      template
+      |> Phoenix.HTML.Safe.to_iodata()
+      |> IO.iodata_to_binary()
     end
 
     #
@@ -117,26 +151,20 @@ if Code.ensure_loaded?(Swoosh) do
         raise "Identity.Notifier.Swoosh requires a `from` address"
     end
 
-    @spec layout_view :: {module, atom}
-    defp layout_view do
+    @spec layout_html :: module | nil
+    defp layout_html do
       layout = Application.get_env(:identity, Identity.Notifier.Swoosh, [])[:layout]
 
       case layout do
         nil ->
-          {Identity.Notifier.Swoosh.View, :email}
-
-        {view, name} when is_atom(view) and is_atom(name) ->
-          {view, name}
+          nil
 
         view when is_atom(view) ->
-          {view, :email}
+          view
 
         _ ->
-          Logger.warning(
-            "Invalid option `layout` for Identity.Notifier.Swoosh; should be module or module and template name"
-          )
-
-          {Identity.Notifier.Swoosh.View, :email}
+          Logger.warning("Invalid option `layout` for Identity.Notifier.Swoosh; should be module")
+          Identity.Notifier.Swoosh.HTML
       end
     end
 
@@ -146,20 +174,20 @@ if Code.ensure_loaded?(Swoosh) do
         raise "Identity.Notifier.Swoosh requires a `mailer` module"
     end
 
-    @spec view :: module
-    defp view do
-      view = Application.get_env(:identity, Identity.Notifier.Swoosh, [])[:view]
+    @spec template_html :: module
+    defp template_html do
+      html = Application.get_env(:identity, Identity.Notifier.Swoosh, [])[:template]
 
-      case view do
+      case html do
         nil ->
-          Identity.Notifier.Swoosh.View
+          Identity.Notifier.Swoosh.HTML
 
-        view when is_atom(view) ->
-          view
+        html when is_atom(html) ->
+          html
 
         _ ->
-          Logger.warning("Invalid option `view` for Identity.Notifier.Swoosh; should be module")
-          Identity.Notifier.Swoosh.View
+          Logger.warning("Invalid option `html` for Identity.Notifier.Swoosh; should be module")
+          Identity.Notifier.Swoosh.HTML
       end
     end
   end
