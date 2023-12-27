@@ -78,6 +78,8 @@ A full router, using all of Identity's features, looks like this:
 
 ```elixir
 scope "/" do
+  pipe_through :browser
+
   # Session
   get "/session/new", Identity.Controller, :new_session, as: :identity
   post "/session/new", Identity.Controller, :create_session, as: :identity

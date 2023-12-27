@@ -22,6 +22,8 @@ A complete router scope using these actions and templates looks like this:
 
 ```elixir
 scope "/" do
+  pipe_through :browser
+
   # Session
   get "/session/new", Identity.Controller, :new_session, as: :identity
   post "/session/new", Identity.Controller, :create_session, as: :identity
@@ -75,7 +77,7 @@ pipeline :custom_identity do
 end
 
 scope "/" do
-  pipe_through :custom_identity
+  pipe_through [:browser, :custom_identity]
 
   get "/session/new", Identity.Controller, :new_session, as: :identity
   post "/session/new", Identity.Controller, :create_session, as: :identity
@@ -92,12 +94,14 @@ All three methods can be used in the same router:
 ```elixir
 # Fully provided actions and templates
 scope "/" do
+  pipe_through :browser
+
   get "/session/new", Identity.Controller, :new_session, as: :identity
   post "/session/new", Identity.Controller, :create_session, as: :identity
 end
 
 scope "/" do
-  pipe_through :custom_identity
+  pipe_through [:browser, :custom_identity]
 
   # Provided action with custom template
   get "/session/2fa", Identity.Controller, :pending_2fa, as: :identity
