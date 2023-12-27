@@ -188,7 +188,9 @@ defmodule Identity.Schema.BasicLogin do
       changeset =
         changeset
         |> Changeset.validate_required([:otp_code, :otp_secret])
-        |> Changeset.validate_format(:otp_code, ~r/^\d{6}$/, message: "should be a 6 digit number")
+        |> Changeset.validate_format(:otp_code, ~r/^\d{6}$/,
+          message: "should be a 6 digit number"
+        )
 
       code = Changeset.get_field(changeset, :otp_code)
       secret = Changeset.get_field(changeset, :otp_secret)
@@ -230,7 +232,7 @@ defmodule Identity.Schema.BasicLogin do
 
     @doc "Verifies the OTP code against the saved secret. Requires NimbleTOTP dependency."
     @spec valid_otp_code?(t, binary) :: no_return
-    def valid_otp_code?(login, code),
+    def valid_otp_code?(_login, _code),
       do: raise("NimbleTOTP is required for two-factor auth")
   end
 

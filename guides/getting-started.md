@@ -180,7 +180,7 @@ def deps do
   [
     # ...
     {:eqrcode, "~> 0.1.10"},
-    {:nimble_totp, "~> 0.1"}
+    {:nimble_totp, "~> 1.0"}
   ]
 end
 ```

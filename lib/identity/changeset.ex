@@ -48,7 +48,7 @@ defmodule Identity.Changeset do
   """
   @spec otp_secret_and_code(map) :: Ecto.Changeset.t(BasicLogin.otp_secret_and_code_data())
   def otp_secret_and_code(attrs \\ %{}) do
-    attrs = Map.put_new_lazy(attrs, :otp_secret, &NimbleTOTP.secret/0)
+    attrs = Map.put_new_lazy(attrs, :otp_secret, fn -> :crypto.strong_rand_bytes(20) end)
 
     {%{}, %{otp_code: :string, otp_secret: :binary}}
     |> Changeset.cast(attrs, [:otp_code, :otp_secret])
