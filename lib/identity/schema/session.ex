@@ -10,13 +10,11 @@ defmodule Identity.Schema.Session do
   """
   use Ecto.Schema
   import Ecto.Query
-  import Identity.Config
 
   alias Identity.Token
   alias Identity.User
 
   @expiration_seconds Application.compile_env(:identity, :remember_me)[:max_age] || 5_184_000
-  @user user_schema()
 
   @typedoc "Struct representing a user's login session."
   @type t :: %__MODULE__{
@@ -35,7 +33,7 @@ defmodule Identity.Schema.Session do
     field :client, :string
     field :token, :binary, redact: true
 
-    belongs_to(:user, @user)
+    belongs_to(:user, Identity.User)
 
     field :last_active_at, :utc_datetime_usec
     timestamps(type: :utc_datetime_usec, updated_at: false)
@@ -65,7 +63,7 @@ defmodule Identity.Schema.Session do
 
   @doc "List all sessions for a given `user`."
   @spec list_by_user_query(User.t()) :: Ecto.Query.t()
-  def list_by_user_query(%@user{id: user_id}) do
+  def list_by_user_query(%_{id: user_id}) do
     from(s in __MODULE__, as: :session)
     |> where(user_id: ^user_id)
   end

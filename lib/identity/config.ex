@@ -8,67 +8,34 @@ defmodule Identity.Config do
 
   ## Options
 
-  | Option | Type | Scope | Description |
-  | `notifier` | `module` | Runtime | Name of the module that implements the `Identity.Notifier` behaviour. This module will be called to send notifications to users. Default: `Identity.Notifier.Log` |
-  | `remember_me` | `keyword` | Runtime | Cookie options for the "remember me" cookie. See `Identity.Plug` for more details. |
-  | `repo` | `module` | Runtime | Name of the Ecto.Repo module for your application, for example `MyApp.Repo`. |
-  | `user` | `module` | Compilation | Name of the module that contains your User schema, for example `MyApp.Accounts.User`. After changing this option, it is necessary to run `mix deps.compile identity --force`. See `Identity.User` for more information. |
+  | Option | Type | Description |
+  | `notifier` | `module` | Name of the module that implements the `Identity.Notifier` behaviour. This module will be called to send notifications to users. Default: `Identity.Notifier.Log` |
+  | `remember_me` | `keyword` | Cookie options for the "remember me" cookie. See `Identity.Plug` for more details. |
+  | `repo` | `module` | Name of the Ecto.Repo module for your application, for example `MyApp.Repo`. |
+  | `user` | `module` | Name of the module that contains your User schema, for example `MyApp.Accounts.User`. See `Identity.User` for more information. |
 
-  ## Compilation Configuration
+  ## Persistent Configuration
 
-  Because of where and when they are used, some configuration options must be specified at compile
-  time and may not be changed dynamically during runtime. If you require a compile-time config
-  option to be changed at runtime, please reach out to the maintainers with additional information
-  about your use case.
+  By default, Identity will store configuration using `:persistent_term` the first time it is used
+  during runtime. This means that changing the configuration in the application environment will
+  not automatically change the library's behaviour. If it is necessary to reload configuration
+  from the application environment, call `reload/1`.
 
-  If the `:user` configuration changes, it is necessary to recompile the entire `:identity`
-  dependency (not just your application). This can be accomplished by running
-  `mix deps.compile identity --force` in each Mix environment. Be aware of this requirement if you
-  use cached build artifacts in CI.
-
-  ## Runtime Configuration
-
-  By default, Identity will read all runtime configuration from the Application environment using
-  `Application.get_env/3`. This means that runtime configuration can be set in a runtime
-  configuration file (such as `runtime.exs`) and changed dynamically using `Application.put_env/4`.
-
-  Looking up data from the Application environment is generally fast enough, even for
-  high-throughput operations. However, developers concerned with performance can use `load/1` to
-  place Identity's runtime configuration into persistent term storage.
 
   > #### Warning {:.warning}
   >
-  > Persistent Term storage can have severe performance implications if used incorrectly. Roughly
-  > speaking, do not call `load/1` if you plan to change any configuration at runtime. See
+  > Persistent Term storage can have severe performance implications if used incorrectly. See
   > [`:persistent_term`](https://www.erlang.org/doc/man/persistent_term.html) for more information.
-  > If performance is this much of a concern, Identity may not make the right trade-offs for your
-  > application.
-
-  To accomplish this, call `load/1` during the startup of the application:
-
-      defmodule MyApp.Application do
-        use Application
-
-        def start(_type, _args) do
-          Identity.Config.load()
-
-          children = [ ... ]
-
-          opts = [strategy: :one_for_one, name: MyApp.Supervisor]
-          Supervisor.start_link(children, opts)
-        end
-      end
-
-  Once configuration has been loaded in this way, calling `Application.put_env/4` will have no
-  effect.
   """
 
   @default_notifier Identity.Notifier.Log
+  @default_user Identity.User
   @key_notifier :notifier
   @key_repo :repo
+  @key_user :user
 
   @doc """
-  Load runtime configuration into persistent term storage.
+  Reload runtime configuration into persistent term storage.
 
   For each runtime configuration key, values will be used in this order:
 
@@ -78,14 +45,19 @@ defmodule Identity.Config do
 
   See the **Runtime Configuration** section above for more information.
   """
-  @spec load(keyword) :: :ok | no_return
-  def load(config \\ []) do
+  @spec reload(keyword) :: :ok | no_return
+  def reload(config \\ []) do
     :persistent_term.put(
       {Identity, @key_notifier},
       config(config, @key_notifier, @default_notifier)
     )
 
     :persistent_term.put({Identity, @key_repo}, config!(config, @key_repo))
+
+    :persistent_term.put(
+      {Identity, @key_user},
+      config(config, @key_user, @default_user)
+    )
 
     :ok
   end
@@ -103,28 +75,47 @@ defmodule Identity.Config do
   @doc false
   defmacro notifier do
     quote do
-      :persistent_term.get(
-        {Identity, unquote(@key_notifier)},
-        Application.get_env(:identity, unquote(@key_notifier), unquote(@default_notifier))
-      )
+      if value = :persistent_term.get({Identity, unquote(@key_notifier)}, nil) do
+        value
+      else
+        value = Application.get_env(:identity, unquote(@key_notifier), unquote(@default_notifier))
+        :persistent_term.put({Identity, unquote(@key_notifier)}, value)
+        value
+      end
     end
   end
 
   @doc false
   defmacro repo do
     quote do
-      :persistent_term.get(
-        {Identity, unquote(@key_repo)},
-        Application.get_env(:identity, unquote(@key_repo))
-      ) ||
-        raise "Required configuration `repo` missing for Identity"
+      if value = :persistent_term.get({Identity, unquote(@key_repo)}, nil) do
+        value
+      else
+        if value = Application.get_env(:identity, unquote(@key_repo)) do
+          :persistent_term.put({Identity, unquote(@key_repo)}, value)
+          value
+        else
+          raise "Required configuration `repo` missing for Identity"
+        end
+      end
     end
   end
 
   @doc false
   defmacro user_schema do
     quote do
-      Application.compile_env(:identity, :user, Identity.User)
+      :persistent_term.get(
+        {Identity, unquote(@key_user)},
+        Application.get_env(:identity, unquote(@key_user), Identity.User)
+      )
+
+      if value = :persistent_term.get({Identity, unquote(@key_user)}, nil) do
+        value
+      else
+        value = Application.get_env(:identity, unquote(@key_user), unquote(@default_user))
+        :persistent_term.put({Identity, unquote(@key_user)}, value)
+        value
+      end
     end
   end
 end

@@ -20,13 +20,10 @@ defmodule Identity.Schema.BasicLogin do
   """
   use Ecto.Schema
   import Ecto.Query
-  import Identity.Config
 
   alias Ecto.Changeset
   alias Identity.Token
   alias Identity.User
-
-  @user user_schema()
 
   @typedoc "Struct representing a basic (password) login method."
   @type t :: %__MODULE__{
@@ -70,7 +67,7 @@ defmodule Identity.Schema.BasicLogin do
       field :used_at, :utc_datetime_usec
     end
 
-    belongs_to(:user, @user)
+    belongs_to(:user, Identity.User)
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -285,7 +282,7 @@ defmodule Identity.Schema.BasicLogin do
 
   @doc "Get the login associated with the given `user`."
   @spec get_login_by_user_query(User.t()) :: Ecto.Query.t()
-  def get_login_by_user_query(%@user{id: user_id}) do
+  def get_login_by_user_query(%_{id: user_id}) do
     from(l in __MODULE__, as: :login)
     |> where(user_id: ^user_id)
   end

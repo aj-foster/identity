@@ -10,11 +10,8 @@ defmodule Identity.Schema.OAuthLogin do
   """
   use Ecto.Schema
   import Ecto.Query
-  import Identity.Config
 
   alias Ecto.Changeset
-
-  @user user_schema()
 
   @typedoc "Struct representing an OAuth login method."
   @type t :: %__MODULE__{}
@@ -30,7 +27,7 @@ defmodule Identity.Schema.OAuthLogin do
     field :scopes, {:array, :string}
     field :token, :string
 
-    belongs_to(:user, @user)
+    belongs_to(:user, Identity.User)
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end

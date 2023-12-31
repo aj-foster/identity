@@ -10,14 +10,12 @@ defmodule Identity.Schema.PasswordToken do
   """
   use Ecto.Schema
   import Ecto.Query
-  import Identity.Config
 
   alias Ecto.Changeset
   alias Identity.Token
   alias Identity.User
 
   @expiration_days 1
-  @user user_schema()
 
   @typedoc "Struct representing password reset in progress."
   @type t :: %__MODULE__{
@@ -35,7 +33,7 @@ defmodule Identity.Schema.PasswordToken do
     field :hashed_token, :binary, redact: true
     field :token, :string, redact: true, virtual: true
 
-    belongs_to(:user, @user)
+    belongs_to(:user, Identity.User)
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end
@@ -62,7 +60,7 @@ defmodule Identity.Schema.PasswordToken do
 
   @doc "Get all tokens associated with the given `user`."
   @spec list_by_user_query(User.t()) :: Ecto.Query.t()
-  def list_by_user_query(%@user{id: user_id}) do
+  def list_by_user_query(%_{id: user_id}) do
     from(t in __MODULE__, as: :token)
     |> where(user_id: ^user_id)
   end

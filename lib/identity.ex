@@ -28,8 +28,6 @@ defmodule Identity do
   alias Identity.Schema.Session
   alias Identity.User
 
-  @user user_schema()
-
   #
   # Users
   #
@@ -48,7 +46,7 @@ defmodule Identity do
   """
   @doc section: :user
   @spec get_user(Ecto.UUID.t()) :: User.t() | nil
-  def get_user(id), do: repo().get(@user, id)
+  def get_user(id), do: repo().get(user_schema(), id)
 
   @doc """
   Get a single user by ID, raising if the user does not exist.
@@ -64,7 +62,7 @@ defmodule Identity do
   """
   @doc section: :user
   @spec get_user!(Ecto.UUID.t()) :: User.t() | no_return
-  def get_user!(id), do: repo().get!(@user, id)
+  def get_user!(id), do: repo().get!(user_schema(), id)
 
   @doc """
   Get a single user by ID, returning `{:ok, user}` or `{:error, :not_found}`.
@@ -81,8 +79,8 @@ defmodule Identity do
   @doc section: :user
   @spec fetch_user(Ecto.UUID.t()) :: {:ok, User.t()} | {:error, :not_found}
   def fetch_user(id) do
-    case repo().get(@user, id) do
-      %@user{} = user -> {:ok, user}
+    case repo().get(user_schema(), id) do
+      %_{} = user -> {:ok, user}
       nil -> {:error, :not_found}
     end
   end
@@ -113,8 +111,8 @@ defmodule Identity do
       BasicLogin.set_last_active_at_query(login)
       |> repo().update_all([])
       |> case do
-        {1, [updated_login]} -> %@user{login.user | login: updated_login}
-        {0, []} -> %@user{login.user | login: login}
+        {1, [updated_login]} -> %{login.user | login: updated_login}
+        {0, []} -> %{login.user | login: login}
       end
     end
   end
@@ -131,7 +129,7 @@ defmodule Identity do
   """
   @doc section: :login
   @spec correct_password?(User.t(), String.t()) :: boolean
-  def correct_password?(%@user{} = user, password) when is_binary(password) do
+  def correct_password?(%_{} = user, password) when is_binary(password) do
     get_login_by_user(user)
     |> BasicLogin.correct_password?(password)
   end
@@ -188,7 +186,7 @@ defmodule Identity do
           {:ok, User.t()} | {:error, Ecto.Changeset.t(Changeset.email_password_data())}
   def create_email_and_login(attrs, opts \\ []) do
     changeset = Changeset.email_and_password(attrs)
-    user = opts[:user] || %@user{}
+    user = opts[:user] || struct!(user_schema())
     token_url_fun = opts[:token_url] || (& &1)
 
     with {:ok, _changeset} <- Ecto.Changeset.apply_action(changeset, :insert) do
@@ -248,7 +246,7 @@ defmodule Identity do
   """
   @doc section: :login
   @spec request_password_change(User.t(), map) :: Ecto.Changeset.t()
-  def request_password_change(%@user{} = user, attrs \\ %{}) do
+  def request_password_change(%_{} = user, attrs \\ %{}) do
     get_login_by_user(user)
     |> BasicLogin.password_changeset(attrs, hash_password: false)
   end
@@ -265,7 +263,7 @@ defmodule Identity do
   @doc section: :login
   @spec update_password(User.t(), String.t(), map) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def update_password(%@user{} = user, current_password, attrs \\ %{}) do
+  def update_password(%_{} = user, current_password, attrs \\ %{}) do
     login_changeset =
       get_login_by_user(user)
       |> BasicLogin.password_changeset(attrs)
@@ -280,7 +278,7 @@ defmodule Identity do
     |> Ecto.Multi.delete_all(:password_resets, reset_token_query)
     |> repo().transaction()
     |> case do
-      {:ok, %{login: login}} -> {:ok, %@user{user | login: login}}
+      {:ok, %{login: login}} -> {:ok, %{user | login: login}}
       {:error, :login, changeset, _} -> {:error, changeset}
     end
   end
@@ -671,7 +669,7 @@ defmodule Identity do
   """
   @doc section: :password_reset
   @spec request_password_reset(User.t(), keyword) :: :ok | {:error, any}
-  def request_password_reset(%@user{} = user, opts \\ []) do
+  def request_password_reset(%_{} = user, opts \\ []) do
     %PasswordToken{token: encoded_token} =
       PasswordToken.initiate_reset_changeset()
       |> Ecto.Changeset.put_assoc(:user, user)
@@ -694,7 +692,7 @@ defmodule Identity do
   @spec get_user_by_password_token(String.t()) :: User.t() | nil
   def get_user_by_password_token(token) do
     with {:ok, query} <- PasswordToken.get_user_by_token_query(token),
-         %@user{} = user <- repo().one(query) do
+         %_{} = user <- repo().one(query) do
       user
     else
       _ -> nil
@@ -892,7 +890,7 @@ defmodule Identity do
         end
 
       nil ->
-        user = opts[:user] || %@user{}
+        user = opts[:user] || struct!(user_schema())
 
         OAuthLogin.from_auth(auth)
         |> Ecto.Changeset.put_assoc(:user, user)

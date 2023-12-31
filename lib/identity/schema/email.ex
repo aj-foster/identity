@@ -18,7 +18,6 @@ defmodule Identity.Schema.Email do
   alias Identity.User
 
   @expiration_days 7
-  @user user_schema()
 
   @typedoc "Struct representing a user's email address."
   @type t :: %__MODULE__{
@@ -46,7 +45,7 @@ defmodule Identity.Schema.Email do
     field :hashed_token, :binary, redact: true
     field :token, :string, redact: true, virtual: true
 
-    belongs_to(:user, @user)
+    belongs_to(:user, Identity.User)
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end
@@ -128,7 +127,7 @@ defmodule Identity.Schema.Email do
   @spec get_login_by_email_query(String.t()) :: Ecto.Query.t()
   def get_login_by_email_query(email) do
     get_by_email_query(email)
-    |> join(:inner, [email: e], u in @user, on: u.id == e.user_id, as: :user)
+    |> join(:inner, [email: e], u in ^user_schema(), on: u.id == e.user_id, as: :user)
     |> join(:inner, [user: u], l in BasicLogin, on: l.user_id == u.id, as: :login)
     |> select([login: l, user: u], merge(l, %{user: u}))
   end
@@ -137,7 +136,7 @@ defmodule Identity.Schema.Email do
   @spec get_user_by_email_query(String.t()) :: Ecto.Query.t()
   def get_user_by_email_query(email) do
     get_by_email_query(email)
-    |> join(:inner, [email: e], u in @user, on: u.id == e.user_id, as: :user)
+    |> join(:inner, [email: e], u in ^user_schema(), on: u.id == e.user_id, as: :user)
     |> select([user: u], u)
   end
 
