@@ -133,6 +133,17 @@ defmodule Identity.PlugTest do
       refute get_session(conn, :user_token)
       refute conn.assigns.current_user
     end
+
+    test "stashes login return from query params", %{conn: conn} do
+      user_return_to = "/my/path?with=query"
+
+      conn =
+        conn
+        |> Map.put(:query_params, %{"after_login" => user_return_to})
+        |> Identity.Plug.fetch_identity([])
+
+      assert get_session(conn, :user_return_to) == user_return_to
+    end
   end
 
   describe "redirect_if_authenticated/2" do

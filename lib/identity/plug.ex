@@ -201,16 +201,27 @@ if Code.ensure_loaded?(Plug.Conn) do
         user = conn.assigns[:current_user]
 
     By adding the plug to every route, the `@current_user` can reliably be used in templates.
+
+    ## Post-Login Redirection
+
+    For any request that uses this plug, a special query param `after_login` is available. When
+    a URL-encoded path is supplied as the value, it will be stashed in the user's session for
+    redirection after a successful login.
+
+    This can be useful, for example, when a LiveView requires authentication but cannot set the
+    `#{@session_return}` session key used by `log_in_and_redirect_user/2`.
     """
-    @spec fetch_identity(Plug.Conn.t(), any) :: Plug.Conn.t()
+    @spec fetch_identity(Conn.t(), any) :: Conn.t()
     def fetch_identity(conn, _opts) do
       {user_token, conn} = ensure_user_token(conn)
       user = user_token && Identity.get_user_by_session(user_token)
 
-      Conn.assign(conn, :current_user, user)
+      conn
+      |> maybe_store_return_to_from_query()
+      |> Conn.assign(:current_user, user)
     end
 
-    @spec ensure_user_token(Plug.Conn.t()) :: {String.t() | nil, Plug.Conn.t()}
+    @spec ensure_user_token(Conn.t()) :: {String.t() | nil, Conn.t()}
     defp ensure_user_token(conn) do
       if user_token = Conn.get_session(conn, @session_token) do
         {user_token, conn}
@@ -222,6 +233,17 @@ if Code.ensure_loaded?(Plug.Conn) do
         else
           {nil, conn}
         end
+      end
+    end
+
+    @spec maybe_store_return_to_from_query(Conn.t()) :: Conn.t()
+    defp maybe_store_return_to_from_query(conn) do
+      conn = Conn.fetch_query_params(conn)
+
+      if path = conn.query_params["after_login"] do
+        Conn.put_session(conn, @session_return, path)
+      else
+        conn
       end
     end
 
@@ -272,7 +294,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     ## Examples
 
         # Defaults to configured `:sign_in` path or `"/"`.
-        plug :redirect_if_unauthenticated, message: "
+        plug :redirect_if_unauthenticated, message: "..."
 
         # Optionally set the redirect destination here.
         plug :redirect_if_unauthenticated, to: "/"
