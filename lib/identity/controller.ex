@@ -230,6 +230,10 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     @doc section: :session
     @spec delete_session(Conn.t(), any) :: Conn.t()
     def delete_session(conn, _params) do
+      if live_socket_id = Conn.get_session(conn, :live_socket_id) do
+        conn.private[:phoenix_endpoint].broadcast(live_socket_id, "disconnect", %{})
+      end
+
       conn
       |> Controller.put_flash(:info, "Successfully logged out")
       |> Identity.Plug.log_out_user()
