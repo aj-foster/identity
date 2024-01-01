@@ -907,11 +907,11 @@ defmodule Identity do
   #
 
   @spec get_login_by_user(User.t()) :: BasicLogin.t() | nil
-  defp get_login_by_user(%User{login: %BasicLogin{} = login} = user) do
+  defp get_login_by_user(%_{login: %BasicLogin{} = login} = user) do
     %BasicLogin{login | user: user}
   end
 
-  defp get_login_by_user(%User{} = user) do
+  defp get_login_by_user(%_{} = user) do
     BasicLogin.get_login_by_user_query(user)
     |> repo().one()
     |> case do
