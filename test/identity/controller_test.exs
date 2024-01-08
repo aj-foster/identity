@@ -62,6 +62,21 @@ defmodule Identity.ControllerTest do
       assert redirected_to(conn) == "/test"
     end
 
+    test "optionally redirects to location set in router", %{
+      conn: conn,
+      email: email,
+      password: password
+    } do
+      params = %{"session" => %{"email" => email, "password" => password}}
+
+      conn =
+        conn
+        |> put_private(:after_login, "/test")
+        |> post("/session/new", params)
+
+      assert redirected_to(conn) == "/test"
+    end
+
     test "optionally stores remember me cookie", %{conn: conn, email: email, password: password} do
       params = %{
         "session" => %{"email" => email, "password" => password, "remember_me" => "true"}
@@ -170,6 +185,24 @@ defmodule Identity.ControllerTest do
       assert html_response(conn, 200) =~ "form action=\"/session/2fa\""
       assert get_session(conn, :user_pending)
       refute conn.resp_cookies["_identity_user_remember_me"]
+    end
+
+    test "optionally redirects to location set in router", %{conn: conn, user: user} do
+      changeset = Identity.enable_2fa_changeset()
+      otp_secret = Ecto.Changeset.get_change(changeset, :otp_secret)
+      otp = NimbleTOTP.verification_code(otp_secret)
+      Identity.enable_2fa(user, %{otp_secret: otp_secret, otp_code: otp})
+
+      params = %{"session" => %{"code" => otp}}
+
+      conn =
+        conn
+        |> Identity.Plug.log_in_user(user, pending: true)
+        |> put_session(:session_remember_me_pending, true)
+        |> put_private(:after_validate, "/test")
+        |> post("/session/2fa", params)
+
+      assert redirected_to(conn) == "/test"
     end
   end
 

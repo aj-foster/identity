@@ -185,6 +185,18 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           }
         }
 
+    ## Success Response
+
+    If 2FA is not enabled, redirects to `"/"` with an informational flash message. The destination
+    of the redirect can be changed by providing an `:after_login` private value in the router:
+
+        get "/session/new", Identity.Controller, :new_session,
+          as: :identity,
+          private: %{after_login: "/path"}
+
+    If 2FA is enabled, a pending status is placed in the session and the user is redirected to the
+    `:pending_2fa` route.
+
     ## Error Response
 
     In the event of a login failure, renders `new_session.html` with:
@@ -207,9 +219,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           |> Conn.put_session(@session_remember_me_pending, remember_me)
           |> Controller.redirect(to: Util.path_for(conn, :pending_2fa))
         else
+          destination = conn.private[:after_login] || "/"
+
           conn
           |> Controller.put_flash(:info, "Successfully logged in")
-          |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
+          |> Identity.Plug.log_in_and_redirect_user(user,
+            remember_me: remember_me,
+            to: destination
+          )
         end
       else
         Controller.render(conn, "new_session.html", error: "Invalid e-mail or password")
@@ -274,6 +291,15 @@ if Code.ensure_loaded?(Phoenix.Controller) do
           }
         }
 
+    ## Success Response
+
+    Redirects to `"/"` with an informational flash message. The destination of the redirect can
+    be changed by providing an `:after_validate` private value in the router:
+
+        post "/session/2fa", Identity.Controller, :validate_2fa,
+          as: :identity,
+          private: %{after_validate: "/path"}
+
     ## Error Response
 
     In the event of a login failure, renders `pending_2fa.html` with:
@@ -288,10 +314,12 @@ if Code.ensure_loaded?(Phoenix.Controller) do
       remember_me = Conn.get_session(conn, @session_remember_me_pending)
 
       if Identity.valid_2fa?(user, code) do
+        destination = conn.private[:after_validate] || "/"
+
         conn
         |> Plug.Conn.delete_session(@session_remember_me_pending)
         |> Controller.put_flash(:info, "Successfully logged in")
-        |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me)
+        |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me, to: destination)
       else
         Controller.render(conn, "pending_2fa.html",
           error: "Invalid two-factor authentication code"
