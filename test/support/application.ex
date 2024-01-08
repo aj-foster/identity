@@ -8,6 +8,7 @@ defmodule Identity.Test.Application do
 
     children = [
       Identity.Test.Repo,
+      {Phoenix.PubSub, name: Identity.Test.PubSub},
       Identity.Test.Endpoint
     ]
 

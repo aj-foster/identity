@@ -14,6 +14,7 @@ config :identity, Identity.Test.Endpoint,
   code_reloader: false,
   debug_errors: true,
   http: [port: 4000],
+  pubsub_server: Identity.Test.PubSub,
   secret_key_base: :binary.copy("secret", 12),
   server: true,
   url: [host: "localhost"]

@@ -543,7 +543,7 @@ defmodule Identity do
     changeset =
       %Email{}
       |> Email.registration_changeset(%{email: email})
-      |> Ecto.Changeset.put_assoc(:user, user)
+      |> Ecto.Changeset.put_change(:user_id, user.id)
 
     with {:ok, %Email{email: email, token: encoded_token}} <- repo().insert(changeset) do
       notifier().confirm_email(email, token_url_fun.(encoded_token))
@@ -577,6 +577,7 @@ defmodule Identity do
       create_email(user, email, opts)
     else
       create_email_changeset()
+      |> Ecto.Changeset.put_change(:email, email)
       |> Ecto.Changeset.add_error(:password, "is invalid")
       |> Ecto.Changeset.apply_action(:insert)
     end

@@ -491,6 +491,40 @@ defmodule Identity.ControllerTest do
       assert conn.assigns[:flash]["error"] =~
                "Email confirmation link is invalid or it has expired"
     end
+
+    test "optionally redirects to location set in router", %{conn: conn, token: token} do
+      redirected_conn =
+        conn
+        |> put_private(:after_all, "/wrong-location")
+        |> put_private(:after_confirm, "/somewhere")
+        |> get("/email/#{token}")
+
+      assert redirected_to(redirected_conn) == "/somewhere"
+
+      redirected_conn =
+        conn
+        |> put_private(:after_all, "/wrong-location")
+        |> put_private(:after_error, "/somewhere")
+        |> get("/email/faketoken")
+
+      assert redirected_to(redirected_conn) == "/somewhere"
+    end
+
+    test "optionally redirects to fallback set in router", %{conn: conn, token: token} do
+      redirected_conn =
+        conn
+        |> put_private(:after_all, "/somewhere")
+        |> get("/email/#{token}")
+
+      assert redirected_to(redirected_conn) == "/somewhere"
+
+      redirected_conn =
+        conn
+        |> put_private(:after_all, "/somewhere")
+        |> get("/email/faketoken")
+
+      assert redirected_to(redirected_conn) == "/somewhere"
+    end
   end
 
   describe "new_user/2" do

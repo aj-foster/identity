@@ -754,25 +754,41 @@ if Code.ensure_loaded?(Phoenix.Controller) do
 
     ## Success Response
 
-    Redirects to `"/"` with an informational flash message.
+    Redirects to `"/"` with an informational flash message. The destination of the redirect can
+    be changed by providing an `:after_confirm` or `:after_all` private value in the router:
+
+        get "/email/:token", Identity.Controller, :confirm_email,
+          as: :identity,
+          private: %{after_confirm: "/login"}
 
     ## Error Response
 
-    In the event of an invalid token, redirects to `"/"` with an informational flash message.
+    In the event of an invalid token, redirects to `"/"` with an informational flash message. The
+    destination of the redirect can be changed by providing an `:after_error` or `:after_all`
+    private value in the router:
+
+        get "/email/:token", Identity.Controller, :confirm_email,
+          as: :identity,
+          private: %{after_confirm: "/login"}
+
     """
     @doc section: :email
     @spec confirm_email(Conn.t(), Conn.params()) :: Conn.t()
     def confirm_email(conn, %{"token" => token}) do
       case Identity.confirm_email(token) do
         {:ok, _email} ->
+          destination = conn.private[:after_confirm] || conn.private[:after_all] || "/"
+
           conn
           |> Controller.put_flash(:info, "Email address confirmed")
-          |> Controller.redirect(to: "/")
+          |> Controller.redirect(to: destination)
 
         {:error, _reason} ->
+          destination = conn.private[:after_error] || conn.private[:after_all] || "/"
+
           conn
           |> Controller.put_flash(:error, "Email confirmation link is invalid or it has expired")
-          |> Controller.redirect(to: "/")
+          |> Controller.redirect(to: destination)
       end
     end
 
