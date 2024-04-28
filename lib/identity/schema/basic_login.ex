@@ -20,6 +20,7 @@ defmodule Identity.Schema.BasicLogin do
   """
   use Ecto.Schema
   import Ecto.Query
+  import Identity.Config
 
   alias Ecto.Changeset
   alias Identity.Token
@@ -67,7 +68,7 @@ defmodule Identity.Schema.BasicLogin do
       field :used_at, :utc_datetime_usec
     end
 
-    belongs_to(:user, Identity.User)
+    belongs_to :user, compile_time_user_schema()
 
     timestamps(type: :utc_datetime_usec)
   end

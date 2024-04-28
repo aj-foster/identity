@@ -3,6 +3,7 @@ defmodule Identity.ControllerTest do
 
   alias Identity.Schema.Email
   alias Identity.Schema.PasswordToken
+  alias Identity.Test.User
 
   describe "new_session/2" do
     test "renders login form", %{conn: conn} do
@@ -44,7 +45,7 @@ defmodule Identity.ControllerTest do
       assert redirected_to(conn) == "/"
 
       token = get_session(conn, :user_token)
-      assert %Identity.User{id: ^user_id} = Identity.get_user_by_session(token)
+      assert %User{id: ^user_id} = Identity.get_user_by_session(token)
     end
 
     test "redirects to stored post-login path if successful", %{
@@ -776,7 +777,7 @@ defmodule Identity.ControllerTest do
       assert redirected_to(conn) == "/"
       assert conn.assigns[:flash]["info"] =~ "logged in"
       token = get_session(conn, :user_token)
-      assert %Identity.User{} = Identity.get_user_by_session(token)
+      assert %User{} = Identity.get_user_by_session(token)
     end
 
     test "adds an identity to an existing user", %{auth: auth, conn: conn, user: user} do

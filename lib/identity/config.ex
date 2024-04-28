@@ -104,11 +104,6 @@ defmodule Identity.Config do
   @doc false
   defmacro user_schema do
     quote do
-      :persistent_term.get(
-        {Identity, unquote(@key_user)},
-        Application.get_env(:identity, unquote(@key_user), Identity.User)
-      )
-
       if value = :persistent_term.get({Identity, unquote(@key_user)}, nil) do
         value
       else
@@ -116,6 +111,13 @@ defmodule Identity.Config do
         :persistent_term.put({Identity, unquote(@key_user)}, value)
         value
       end
+    end
+  end
+
+  @doc false
+  defmacro compile_time_user_schema do
+    quote do
+      Application.compile_env(:identity, unquote(@key_user), unquote(@default_user))
     end
   end
 end

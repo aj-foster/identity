@@ -10,6 +10,7 @@ defmodule Identity.Schema.Session do
   """
   use Ecto.Schema
   import Ecto.Query
+  import Identity.Config
 
   alias Identity.Token
   alias Identity.User
@@ -33,7 +34,7 @@ defmodule Identity.Schema.Session do
     field :client, :string
     field :token, :binary, redact: true
 
-    belongs_to(:user, Identity.User)
+    belongs_to :user, compile_time_user_schema()
 
     field :last_active_at, :utc_datetime_usec
     timestamps(type: :utc_datetime_usec, updated_at: false)

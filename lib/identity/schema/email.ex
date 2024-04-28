@@ -45,7 +45,7 @@ defmodule Identity.Schema.Email do
     field :hashed_token, :binary, redact: true
     field :token, :string, redact: true, virtual: true
 
-    belongs_to(:user, Identity.User)
+    belongs_to :user, compile_time_user_schema()
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end

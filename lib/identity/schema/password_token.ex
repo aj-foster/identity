@@ -10,6 +10,7 @@ defmodule Identity.Schema.PasswordToken do
   """
   use Ecto.Schema
   import Ecto.Query
+  import Identity.Config
 
   alias Ecto.Changeset
   alias Identity.Token
@@ -33,7 +34,7 @@ defmodule Identity.Schema.PasswordToken do
     field :hashed_token, :binary, redact: true
     field :token, :string, redact: true, virtual: true
 
-    belongs_to(:user, Identity.User)
+    belongs_to :user, compile_time_user_schema()
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end

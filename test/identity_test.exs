@@ -7,7 +7,7 @@ defmodule IdentityTest do
   alias Identity.Schema.OAuthLogin
   alias Identity.Schema.PasswordToken
   alias Identity.Schema.Session
-  alias Identity.User
+  alias Identity.Test.User
 
   #
   # Users

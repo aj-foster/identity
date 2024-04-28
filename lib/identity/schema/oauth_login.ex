@@ -10,6 +10,7 @@ defmodule Identity.Schema.OAuthLogin do
   """
   use Ecto.Schema
   import Ecto.Query
+  import Identity.Config
 
   alias Ecto.Changeset
 
@@ -27,7 +28,7 @@ defmodule Identity.Schema.OAuthLogin do
     field :scopes, {:array, :string}
     field :token, :string
 
-    belongs_to(:user, Identity.User)
+    belongs_to :user, compile_time_user_schema()
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end

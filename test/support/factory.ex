@@ -96,7 +96,7 @@ defmodule Identity.Test.Factory do
   end
 
   def user_factory do
-    %Identity.User{
+    %Identity.Test.User{
       id: Ecto.UUID.generate()
     }
   end
