@@ -470,7 +470,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
               |> Controller.put_flash(:info, "Two-factor authentication enabled")
               |> Controller.render("show_2fa_codes.html", codes: backup_codes)
 
-            {:error, changeset} ->
+            {:error, _changeset} ->
               new_changeset = Identity.enable_2fa_changeset()
               otp_secret = Ecto.Changeset.get_field(new_changeset, :otp_secret)
               otp_uri = NimbleTOTP.otpauth_uri("Identity:#{user.id}", otp_secret)
@@ -486,7 +486,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
                 "Verification code invalid. Please try again with this new code."
               )
               |> Controller.render("new_2fa.html",
-                changeset: changeset,
+                changeset: new_changeset,
                 otp_uri: otp_uri,
                 otp_secret: Base.encode32(otp_secret, padding: false),
                 qr_code: qr_code
