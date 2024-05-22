@@ -3,19 +3,33 @@
 
   <.form :let={f} for={@changeset} action={path_for(@conn, :create_email)} as={:email}>
     <div class="id_field id_field_text">
-      <%= label(f, :email, "New email address", class: "id_text_label") %>
-      <%= email_input(f, :email, required: true, class: "id_text_input") %>
-      <%= error_tag(f, :email) %>
+      <label class="id_text_label" for={f[:email].id}>New email address</label>
+      <input
+        class="id_text_input"
+        id={f[:email].id}
+        name={f[:email].name}
+        required
+        type="email"
+        value={Phoenix.HTML.Form.normalize_value("email", f[:email].value)}
+      />
+      <.errors field={f[:email]} />
     </div>
 
     <div class="id_field id_field_text">
-      <%= label(f, :password, "Verify password", class: "id_text_label") %>
-      <%= password_input(f, :password, required: true, class: "id_text_input") %>
-      <%= error_tag(f, :password) %>
+      <label class="id_text_label" for={f[:password].id}>Verify password</label>
+      <input
+        class="id_text_input"
+        id={f[:password].id}
+        name={f[:password].name}
+        required
+        type="password"
+        value={Phoenix.HTML.Form.normalize_value("password", f[:password].value)}
+      />
+      <.errors field={f[:password]} />
     </div>
 
     <div class="id_submit">
-      <%= submit("Add email", class: "id_submit_button") %>
+      <button class="id_submit_button" type="submit">Add email</button>
     </div>
   </.form>
 </div>

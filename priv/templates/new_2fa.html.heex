@@ -18,15 +18,22 @@
 
   <.form :let={f} for={@changeset} action={path_for(@conn, :create_2fa)} as={:mfa}>
     <div class="id_field id_field_text">
-      <%= label(f, :otp_code, "Verification code", class: "id_text_label") %>
-      <%= text_input(f, :otp_code, required: true, class: "id_text_input") %>
-      <%= error_tag(f, :otp_code) %>
+      <label class="id_text_label" for={f[:otp_code].id}>Verification code</label>
+      <input
+        class="id_text_input"
+        id={f[:otp_code].id}
+        name={f[:otp_code].name}
+        required
+        type="text"
+        value={Phoenix.HTML.Form.normalize_value("text", f[:otp_code].value)}
+      />
+      <.errors field={f[:otp_code]} />
     </div>
 
-    <%= hidden_input(f, :otp_secret, value: @otp_secret) %>
+    <input id={f[:otp_secret].id} name={f[:otp_secret].name} value={@otp_secret} type="hidden" />
 
     <div class="id_submit">
-      <%= submit("Verify code", class: "id_submit_button") %>
+      <button class="id_submit_button" type="submit">Verify code</button>
     </div>
   </.form>
 </div>

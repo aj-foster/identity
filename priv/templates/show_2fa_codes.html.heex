@@ -17,9 +17,6 @@
   </div>
 
   <div class="id_actions">
-    <%= link("Return",
-      to: path_for(@conn, :show_2fa),
-      class: "id_action_primary"
-    ) %>
+    <.link class="id_action_primary" navigate={path_for(@conn, :show_2fa)}>Return</.link>
   </div>
 </div>

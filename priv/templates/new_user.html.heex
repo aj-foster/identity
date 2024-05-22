@@ -9,31 +9,41 @@
     <% end %>
 
     <div class="id_field id_field_text">
-      <%= label(f, :email, class: "id_text_label") %>
-      <%= email_input(f, :email, required: true, class: "id_text_input") %>
-      <%= error_tag(f, :email) %>
+      <label class="id_text_label" for={f[:email].id}>Email</label>
+      <input
+        class="id_text_input"
+        id={f[:email].id}
+        name={f[:email].name}
+        required
+        type="email"
+        value={Phoenix.HTML.Form.normalize_value("email", f[:email].value)}
+      />
+      <.errors field={f[:email]} />
     </div>
 
     <div class="id_field id_field_text">
-      <%= label(f, :password, class: "id_text_label") %>
-      <%= password_input(f, :password, required: true, class: "id_text_input") %>
-      <%= error_tag(f, :password) %>
+      <label class="id_text_label" for={f[:password].id}>Password</label>
+      <input
+        class="id_text_input"
+        id={f[:password].id}
+        name={f[:password].name}
+        required
+        type="password"
+        value={Phoenix.HTML.Form.normalize_value("password", f[:password].value)}
+      />
+      <.errors field={f[:password]} />
     </div>
 
     <div class="id_submit">
-      <%= submit("Register", class: "id_submit_button") %>
+      <button class="id_submit_button" type="submit">Register</button>
     </div>
   </.form>
 
   <div class="id_links">
-    <%= link(
-      "Log in",
-      to: path_for(@conn, :new_session),
-      class: "id_link"
-    ) %> &bull; <%= link(
-      "Forgot your password?",
-      to: path_for(@conn, :new_password_token),
-      class: "id_link"
-    ) %>
+    <.link class="id_link" navigate={path_for(@conn, :new_session)}>Log in</.link>
+    &bull;
+    <.link class="id_link" navigate={path_for(@conn, :new_password_token)}>
+      Forgot your password?
+    </.link>
   </div>
 </div>

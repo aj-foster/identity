@@ -12,20 +12,28 @@
     <% end %>
 
     <div class="id_field id_field_text">
-      <%= label(f, :code, class: "id_text_label") %>
-      <%= text_input(f, :code, required: true, class: "id_text_input") %>
+      <label class="id_text_label" for={f[:code].id}>2FA Code</label>
+      <input
+        class="id_text_input"
+        id={f[:code].id}
+        inputmode="numeric"
+        name={f[:code].name}
+        required
+        type="text"
+        value={Phoenix.HTML.Form.normalize_value("text", f[:code].value)}
+      />
     </div>
 
     <div class="id_submit">
-      <%= submit("Log in", class: "id_submit_button") %>
+      <button class="id_submit_button" type="submit">Log in</button>
     </div>
   </.form>
 
   <div class="id_links">
-    <%= link("Register", to: path_for(@conn, :new_user), class: "id_link") %> | <%= link(
-      "Forgot your password?",
-      to: path_for(@conn, :new_password_token),
-      class: "id_link"
-    ) %>
+    <.link class="id_link" navigate={path_for(@conn, :new_user)}>Register</.link>
+    &bull;
+    <.link class="id_link" navigate={path_for(@conn, :new_password_token)}>
+      Forgot your password?
+    </.link>
   </div>
 </div>

@@ -1,6 +1,5 @@
 defmodule Identity.Phoenix.HTML do
   use Phoenix.Component
-  use Phoenix.HTML
   import Identity.Phoenix.Util
 
   embed_templates "../../../priv/templates/*"
@@ -8,13 +7,15 @@ defmodule Identity.Phoenix.HTML do
   @doc """
   Generates tag for inlined form input errors.
   """
-  def error_tag(form, field) do
-    Enum.map(Keyword.get_values(form.errors, field), fn error ->
-      content_tag(:span, translate_error(error),
-        class: "invalid_feedback",
-        phx_feedback_for: input_id(form, field)
-      )
-    end)
+  def errors(assigns) do
+    %{field: %Phoenix.HTML.FormField{errors: errors}} = assigns
+    assigns = assign(assigns, :errors, Enum.map(errors, &translate_error/1))
+
+    ~H"""
+    <span :for={error <- @errors} class="invalid_feedback" phx-feedback-for={@field.name}>
+      <%= error %>
+    </span>
+    """
   end
 
   @doc """

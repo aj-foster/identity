@@ -7,20 +7,16 @@
   </p>
   <p class="id_info">
     Two-factor authentication is currently
-    <strong><%= if @enabled?, do: "enabled", else: "disabled" %></strong> for your account.
+    <strong><%= if @enabled?, do: "enabled", else: "disabled" %></strong>
+    for your account.
   </p>
   <div class="id_actions">
     <%= if @enabled? do %>
-      <%= link("Disable",
-        to: path_for(@conn, :delete_2fa),
-        method: :delete,
-        class: "id_action_primary"
-      ) %>
+      <.link class="id_action_primary" method="delete" href={path_for(@conn, :delete_2fa)}>
+        Disable
+      </.link>
     <% else %>
-      <%= link("Enable",
-        to: path_for(@conn, :new_2fa),
-        class: "id_action_primary"
-      ) %>
+      <.link class="id_action_primary" navigate={path_for(@conn, :new_2fa)}>Enable</.link>
     <% end %>
   </div>
 
@@ -29,18 +25,17 @@
 
     <p class="id_info">
       If you are unable to provide a generated code during login, you can instead use one of the
-      <strong><%= @codes_remaining %></strong> remaining backup codes provided when you enabled
+      <strong><%= @codes_remaining %></strong>
+      remaining backup codes provided when you enabled
       two-factor authentication. You can generate 10 new backup codes below.
     </p>
     <p class="id_info">
       Generating new backup codes will invalidate all existing codes.
     </p>
     <div class="id_actions">
-      <%= link("Regenerate Backup Codes",
-        to: path_for(@conn, :regenerate_2fa),
-        method: :post,
-        class: "id_action_secondary"
-      ) %>
+      <.link class="id_action_primary" method="put" href={path_for(@conn, :regenerate_2fa)}>
+        Regenerate Backup Codes
+      </.link>
     </div>
   <% end %>
 </div>
