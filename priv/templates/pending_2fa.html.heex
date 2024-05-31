@@ -4,7 +4,7 @@
     Enter the six-digit code from your device, or any of your eight-character backup codes.
   </p>
 
-  <.form :let={f} for={@conn} action={path_for(@conn, :validate_2fa)} as={:session}>
+  <.form :let={f} for={@form} action={path_for(@conn, :validate_2fa)} as={:session}>
     <%= if @error do %>
       <div class="id_error_message">
         <p><%= @error %></p>

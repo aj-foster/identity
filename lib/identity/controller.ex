@@ -272,12 +272,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     Renders `pending_2fa.html` with the following assigns:
 
       * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
+      * `:form` (`Phoenix.HTML.FormData`): Form containing a single field called `code`.
 
     """
     @doc section: :mfa
     @spec pending_2fa(Conn.t(), Conn.params()) :: Conn.t()
     def pending_2fa(conn, _params) do
-      Controller.render(conn, "pending_2fa.html", error: nil)
+      form = Phoenix.Component.to_form(%{"code" => ""})
+      Controller.render(conn, "pending_2fa.html", error: nil, form: form)
     end
 
     @doc """
@@ -305,6 +307,7 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     In the event of a login failure, renders `pending_2fa.html` with:
 
       * `:error` (string or `nil`): Error message about the invalid code.
+      * `:form` (`Phoenix.HTML.FormData`): Form containing a single field called `code`.
 
     """
     @doc section: :mfa
@@ -321,8 +324,11 @@ if Code.ensure_loaded?(Phoenix.Controller) do
         |> Controller.put_flash(:info, "Successfully logged in")
         |> Identity.Plug.log_in_and_redirect_user(user, remember_me: remember_me, to: destination)
       else
+        form = Phoenix.Component.to_form(%{"code" => ""})
+
         Controller.render(conn, "pending_2fa.html",
-          error: "Invalid two-factor authentication code"
+          error: "Invalid two-factor authentication code",
+          form: form
         )
       end
     end
@@ -570,12 +576,14 @@ if Code.ensure_loaded?(Phoenix.Controller) do
     Renders `new_password_token.html` with the following assigns:
 
       * `:error` (string or `nil`): Error message to display. For this action, always `nil`.
+      * `:form` (`Phoenix.HTML.FormData`): Form containing a single field called `email`.
 
     """
     @doc section: :password_reset
     @spec new_password_token(Conn.t(), Conn.params()) :: Conn.t()
     def new_password_token(conn, _params) do
-      Controller.render(conn, "new_password_token.html", error: nil)
+      form = Phoenix.Component.to_form(%{"email" => ""})
+      Controller.render(conn, "new_password_token.html", error: nil, form: form)
     end
 
     @doc """
