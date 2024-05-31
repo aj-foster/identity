@@ -138,6 +138,7 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     @spec renew_session(Conn.t()) :: Conn.t()
     defp renew_session(conn) do
+      Plug.CSRFProtection.delete_csrf_token()
       user_return_to = Conn.get_session(conn, @session_return)
 
       conn
