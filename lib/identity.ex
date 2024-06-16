@@ -163,6 +163,12 @@ defmodule Identity do
 
   ## Options
 
+    * `:run` (function): Function that will be passed to `Ecto.Multi.run/3` to run in the same
+      transaction as the creation of the user, email, and login. The function may accept the
+      Ecto repo (optional) and a map containing the `email`, `login`, and `user` in appropriately
+      named atom keys. The function must return `{:ok, value}` for the transaction to succeed or
+      `{:error, reason}` to roll it back.
+
     * `:token_url` (function `String.t() -> String.t()`): Function to convert a (human-readable,
       URL-safe) confirmation token into the email confirmation URL. This is necessary for email
       notifiers. Defaults to using the token without embedding it in a URL.
@@ -201,6 +207,18 @@ defmodule Identity do
         %BasicLogin{}
         |> BasicLogin.registration_changeset(attrs)
         |> Ecto.Changeset.put_assoc(:user, email.user)
+      end)
+      |> Ecto.Multi.run(:opt, fn repo, %{email: email, login: login} ->
+        cond do
+          is_function(opts[:run], 1) ->
+            opts[:run].(%{email: email, login: login, user: email.user})
+
+          is_function(opts[:run], 2) ->
+            opts[:run].(repo, %{email: email, login: login, user: email.user})
+
+          :else ->
+            {:ok, nil}
+        end
       end)
       |> repo().transaction()
       |> case do
