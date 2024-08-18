@@ -63,6 +63,14 @@ defmodule Identity.Schema.Email do
     |> put_token()
   end
 
+  @doc "Regenerate the confirmation token"
+  @spec regenerate_changeset(t) :: Changeset.t(t)
+  def regenerate_changeset(struct) do
+    struct
+    |> Changeset.change()
+    |> put_token()
+  end
+
   @doc "Validate email structure and uniqueness."
   @spec validate_email(Changeset.t(email_data)) :: Changeset.t(email_data)
   def validate_email(changeset) do

@@ -602,6 +602,36 @@ defmodule Identity do
   end
 
   @doc """
+  Regenerate the confirmation token and resend a confirmation email to the given address
+
+  This function takes an existing email address record and repeats the token generation and
+  confirmation notification process. This can be useful for addresses that have been unconfirmed
+  for a while. See `c:Identity.Notifier.confirm_email/2` for more information.
+
+  ## Options
+
+  This function accepts the same options as `create_email/3`.
+
+  ## Examples
+
+      iex> Identity.regenerate_email(%Email{})
+      :ok
+
+  """
+  @doc section: :email
+  @spec regenerate_email(Email.t()) :: :ok | {:error, Ecto.Changeset.t() | any}
+  @spec regenerate_email(Email.t(), keyword) :: :ok | {:error, Ecto.Changeset.t() | any}
+  def regenerate_email(email, opts \\ []) do
+    token_url_fun = opts[:token_url] || (& &1)
+
+    changeset = Email.regenerate_changeset(email)
+
+    with {:ok, %Email{email: email, token: encoded_token}} <- repo().update(changeset) do
+      notifier().confirm_email(email, token_url_fun.(encoded_token))
+    end
+  end
+
+  @doc """
   Confirm an email by its encoded `token`.
 
   ## Examples
