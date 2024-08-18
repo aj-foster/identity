@@ -115,7 +115,7 @@ if Code.ensure_loaded?(Swoosh) do
 
       html =
         if layout_module do
-          apply(layout_module, :email_html, inner_content: html_heex, title: assigns[:title])
+          apply(layout_module, :email_html, [[inner_content: html_heex, title: assigns[:title]]])
         else
           html_heex
         end
@@ -124,7 +124,7 @@ if Code.ensure_loaded?(Swoosh) do
 
       text =
         if layout_module do
-          apply(layout_module, :email_text, inner_content: text_heex, title: assigns[:title])
+          apply(layout_module, :email_text, [[inner_content: text_heex, title: assigns[:title]]])
         else
           text_heex
         end
