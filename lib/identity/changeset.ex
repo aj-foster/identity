@@ -40,6 +40,20 @@ defmodule Identity.Changeset do
   end
 
   @doc """
+  Changeset for inserting a new `Identity.Schema.Email` with validation of the current password.
+
+  This changeset operates on `t:email_password_data/0` and performs all of the relevant validation
+  on the `:email` field. See `Identity.Schema.Email.validate_email/1` for more information. No
+  validation is done on the `:password` field.
+  """
+  @spec email_with_password(map) :: Ecto.Changeset.t(email_password_data)
+  def email_with_password(attrs \\ %{}) do
+    {%{}, %{email: :string, password: :string}}
+    |> Changeset.cast(attrs, [:email, :password])
+    |> Email.validate_email()
+  end
+
+  @doc """
   Changeset for enabling 2FA on an `Identity.Schema.BasicLogin`.
 
   This changeset operates on `t:Identity.Schema.BasicLogin.otp_secret_and_code_data/0` and ensures

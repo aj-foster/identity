@@ -599,8 +599,8 @@ defmodule Identity do
     if correct_password?(user, password) do
       create_email(user, email, opts)
     else
-      %{email: email, password: ""}
-      |> Changeset.email_and_password()
+      %{email: email, password: "password"}
+      |> Changeset.email_with_password()
       |> Ecto.Changeset.put_change(:email, email)
       |> Ecto.Changeset.add_error(:password, "is invalid")
       |> Ecto.Changeset.apply_action(:insert)
