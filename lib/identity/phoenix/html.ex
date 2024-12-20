@@ -7,13 +7,13 @@ defmodule Identity.Phoenix.HTML do
   @doc """
   Generates tag for inlined form input errors.
   """
-  def errors(assigns) do
-    %{field: %Phoenix.HTML.FormField{errors: errors}} = assigns
+  def errors(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
+    errors = if Phoenix.Component.used_input?(field), do: field.errors, else: []
     assigns = assign(assigns, :errors, Enum.map(errors, &translate_error/1))
 
     ~H"""
     <span :for={error <- @errors} class="invalid_feedback" phx-feedback-for={@field.name}>
-      <%= error %>
+      {error}
     </span>
     """
   end

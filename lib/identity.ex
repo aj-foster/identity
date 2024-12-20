@@ -524,11 +524,16 @@ defmodule Identity do
       iex> Identity.create_email_changeset()
       #Ecto.Changeset<...>
 
+      iex> Identity.create_email_changeset(%{email: "...", password: ""})
+      #Ecto.Changeset<...>
+
   """
   @doc section: :email
   @spec create_email_changeset :: Ecto.Changeset.t()
-  def create_email_changeset do
-    Ecto.Changeset.change(%Email{})
+  @spec create_email_changeset(map) :: Ecto.Changeset.t()
+  def create_email_changeset(params \\ %{}) do
+    {%{}, %{email: :string, password: :string}}
+    |> Ecto.Changeset.cast(params, [:email, :password])
   end
 
   @doc """
@@ -594,7 +599,8 @@ defmodule Identity do
     if correct_password?(user, password) do
       create_email(user, email, opts)
     else
-      create_email_changeset()
+      %{email: email, password: ""}
+      |> Changeset.email_and_password()
       |> Ecto.Changeset.put_change(:email, email)
       |> Ecto.Changeset.add_error(:password, "is invalid")
       |> Ecto.Changeset.apply_action(:insert)
